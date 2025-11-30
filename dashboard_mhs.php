@@ -69,7 +69,7 @@ $username = $_SESSION['username'];
 <body>
 
   <div class="sidebar d-flex flex-column">
-    <h4 class="mb-4">MAHASISWA PANEL</h4>
+    <img src="logo.png" alt="Logo" class="mb-3" width="120">
 
     <ul class="nav flex-column">
       <li class="nav-item">
@@ -118,6 +118,7 @@ $username = $_SESSION['username'];
         <i class="bi bi-box-arrow-right" style="font-size: 26px;"></i>
       </a>
     </div>
+  
 
   </div>
 
