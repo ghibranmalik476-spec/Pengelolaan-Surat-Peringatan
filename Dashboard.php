@@ -1,19 +1,27 @@
-<?php>
+<?php
+session_start();
+require 'koneksi.php';
+
+if (!isset($_SESSION['username']) || $_SESSION['role'] != 'staff') {
+    header("Location: login.php");
+    exit;
+}
+
+$username = $_SESSION['username'];
+?>
+
 <!DOCTYPE html>
 <html lang="id">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard</title>
+  <title>Dashboard Staff</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 
   <style>
-    body {
-      background-color: #f8f9fa;
-    }
-    .test{
-      
-    }
+    body { background-color: #f8f9fa; }
+
     .sidebar {
       width: 250px;
       height: 100vh;
@@ -24,80 +32,96 @@
       left: 0;
       padding: 20px;
     }
+
     .sidebar .nav-link {
       color: #333;
       font-weight: 500;
     }
+
     .sidebar .nav-link.active {
       color: #0d6efd;
     }
-    .sidebar .submenu .nav-link {
-      font-weight: normal;
+
+    .submenu .nav-link {
       margin-left: 20px;
       font-size: 0.95rem;
     }
+
     .content {
       margin-left: 270px;
       padding: 20px;
     }
-    .header {
-      background-color: #2f2fff;
-      height: 50px;
-      color: white;
-      padding: 10px;
-    }
+
     .profile {
       position: absolute;
       bottom: 20px;
       left: 20px;
+      right: 20px;
+      display: flex;
+      align-items: center;
     }
   </style>
 </head>
 <body>
 
   <div class="sidebar d-flex flex-column">
-    <img src="logo.png" alt="Logo" class="mb-3" width="120">
+    <h4 class="mb-4">STAFF PANEL</h4>
 
     <ul class="nav flex-column">
       <li class="nav-item">
-        <a class="nav-link active" href="#">Dashboard</a>
+        <a class="nav-link active" href="dashboard_staff.php">Dashboard</a>
       </li>
 
       <li class="nav-item">
         <a class="nav-link" href="#">Beranda</a>
       </li>
+
       <li class="nav-item">
-        <a class="nav-link" data-bs-toggle="collapse" href="#submenuAbsensi" role="button" aria-expanded="false" aria-controls="submenuAbsensi">
-          Absensi
+        <a class="nav-link" data-bs-toggle="collapse" href="#submenuSPMahasiswa">
+          SP mahasiswa
         </a>
-        <div class="collapse submenu" id="submenuAbsensi">
+        <div class="collapse submenu" id="submenuSPMahasiswa">
           <ul class="nav flex-column ms-3">
-            <li class="nav-item"><a class="nav-link" href="#">Entri Absen</a></li>
-            <li class="nav-item"><a class="nav-link" href="#">Rekap Mahasiswa </a></li>
+            <li class="nav-item"><a class="nav-link" href="#">Buat SP</a></li>
+            <li class="nav-item"><a class="nav-link" href="#">Rekap / Daftar SP</a></li>
+            <li class="nav-item"><a class="nav-link" href="#">Kelola SP</a></li>
           </ul>
         </div>
       </li>
+
       <li class="nav-item">
-        <a class="nav-link" data-bs-toggle="collapse" href="#submenuSP" role="button" aria-expanded="false" aria-controls="submenuSP">
-          Surat Peringatan
+        <a class="nav-link" data-bs-toggle="collapse" href="#submenuSP">
+          Pencarian SP
         </a>
         <div class="collapse submenu" id="submenuSP">
           <ul class="nav flex-column ms-3">
-            <li class="nav-item"><a class="nav-link" href="#">Rekap SP Mahasiswa</a></li>
-            <li class="nav-item"><a class="nav-link" href="SP.html">Detail SP Mahasiswa</a></li>
+            <li class="nav-item"><a class="nav-link" href="#">Cari SP</a></li>
+            <li class="nav-item"><a class="nav-link" href="SP.html">Cari Data Mahasiswa</a></li>
           </ul>
         </div>
       </li>
     </ul>
 
-    <div class="profile mt-auto d-flex align-items-center">
+    <!-- PROFILE + LOGOUT ICON -->
+    <div class="profile mt-auto">
       <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" width="40" class="me-2">
-      <div>
-        <strong>Sifulan</strong><br>
-        <small>Admin</small>
+
+      <div class="me-auto">
+        <strong><?= $username ?></strong><br>
+        <small>Staff</small>
       </div>
+
+      <!-- LOGOUT ICON -->
+      <a href="logout.php" class="text-danger ms-3" title="Logout">
+        <i class="bi bi-box-arrow-right" style="font-size: 26px;"></i>
+      </a>
     </div>
+
   </div>
+
+  <div class="content">
+    <h1>Welcome to Our System , Sir <?= $username ?></h1>
+    <p>Sistem Surat Peringatan Mahasiswa </p>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

@@ -1,32 +1,33 @@
 <?php
 session_start();
-
-
-$host = "localhost";
-$user = "root";
-$pass = "";
-$db   = "web";
-
-$conn = mysqli_connect($host, $user, $pass, $db);
-
-if (!$conn) {
-    die("Koneksi gagal: " . mysqli_connect_error());
-}
-
+require 'koneksi.php';
 $error = "";
 
 if (isset($_POST['login'])) {
-    $username = $_POST['username'];
-    $password = md5($_POST['password']);
+    $username = trim($_POST['username']);
+    $password = $_POST['password'];
 
-    $query = mysqli_query($conn, "SELECT * FROM user WHERE username='$username' AND password='$password'");
-    
-    if (mysqli_num_rows($query) > 0) {
-        $_SESSION['username'] = $username;
-        header("Location: dashboard.php");
-        exit;
+    $query = mysqli_query($conn, "SELECT * FROM user WHERE username='$username' LIMIT 1");
+    $data = mysqli_fetch_assoc($query);
+
+    if ($data) {
+        if (password_verify($password, $data['password'])) {
+
+            $_SESSION['username'] = $data['username'];
+            $_SESSION['role']     = $data['role'];
+
+            if ($data['role'] == "staff") {
+                header("Location: dashboard.php"); exit;
+                
+            } else if ($data['role'] == "mahasiswa") {
+                header("Location: dashboard_mhs.php"); exit;
+            }
+
+        } else {
+            $error = "Password salah!";
+        }
     } else {
-        $error = "Username atau password salah!";
+        $error = "Username tidak ditemukan!";
     }
 }
 ?>
@@ -38,9 +39,9 @@ if (isset($_POST['login'])) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Login</title>
 
-  
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-<style>
+
+  <style>
     body {
       background: url('https://learning-if.polibatam.ac.id/pluginfile.php/1/theme_moove/sliderimage1/1756270195/DJI_0066.JPG%20%282%29.jpg') 
                   no-repeat center center fixed;
@@ -54,7 +55,7 @@ if (isset($_POST['login'])) {
     }
   </style>
 </head>
-<body class="bg-light">
+<body>
 
 <div class="container vh-100 d-flex justify-content-center align-items-center">
 

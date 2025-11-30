@@ -1,44 +1,35 @@
 <?php
 session_start();
+require 'koneksi.php';
 
-$host = "localhost";
-$user = "root";
-$pass = "";
-$db   = "web";
-
-$conn = mysqli_connect($host, $user, $pass, $db);
-
-if (!$conn) {
-    die("Koneksi gagal: " . mysqli_connect_error());
-}
-
-$success = "";
-$error = "";
+$error = $success = "";
 
 if (isset($_POST['register'])) {
+    $username = trim($_POST['username']);
+    $password = $_POST['password'];
+    $ulang    = $_POST['ulang'];
+    $role     = $_POST['role'];
 
-    $username = $_POST['username'];
-    $password = md5($_POST['password']); 
-    $ulang    = md5($_POST['ulang']);  
-
-    
     if ($password != $ulang) {
-        $error = "Password dan konfirmasi tidak sama!";
+        $error = "Password tidak sama!";
     } else {
-
-       
-        $cek = mysqli_query($conn, "SELECT * FROM user WHERE username='$username'");
-        
-        if (mysqli_num_rows($cek) > 0) {
-            $error = "Username sudah digunakan!";
+        // cek username sudah ada
+        $q = mysqli_query($conn, "SELECT * FROM user WHERE username='$username'");
+        if (mysqli_num_rows($q) > 0) {
+            $error = "Username sudah dipakai!";
         } else {
-           
-            $insert = mysqli_query($conn, "INSERT INTO user (username, password) VALUES('$username', '$password')");
-            
+            // hash password
+            $hash = password_hash($password, PASSWORD_DEFAULT);
+
+            $insert = mysqli_query($conn, "
+                INSERT INTO user (username, password, role)
+                VALUES ('$username', '$hash', '$role')
+            ");
+
             if ($insert) {
-                $success = "Pendaftaran berhasil! Silakan login.";
+                $success = "Pendaftaran berhasil. Silakan login.";
             } else {
-                $error = "Terjadi kesalahan saat daftar!";
+                $error = "Gagal daftar!";
             }
         }
     }
@@ -50,10 +41,7 @@ if (isset($_POST['register'])) {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Register</title>
-
-  
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-
 </head>
 <body class="bg-light">
 
@@ -85,6 +73,15 @@ if (isset($_POST['register'])) {
             <div class="mb-3">
                 <label class="form-label">Ulangi Password</label>
                 <input type="password" name="ulang" class="form-control" required>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Daftar Sebagai</label>
+                <select name="role" class="form-control" required>
+                    <option value="">-- Pilih Role --</option>
+                    <option value="staff">Staff Akademik</option>
+                    <option value="mahasiswa">Mahasiswa</option>
+                </select>
             </div>
 
             <button type="submit" name="register" class="btn btn-success w-100">
