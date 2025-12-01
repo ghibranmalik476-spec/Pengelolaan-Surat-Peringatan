@@ -64,6 +64,102 @@ $username = $_SESSION['username'];
       display: flex;
       align-items: center;
     }
+
+    .dashboard-header {
+      background: #ffffff;
+      border-radius: 10px;
+      padding: 25px;
+      margin-bottom: 30px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      border-left: 4px solid #0d6efd;
+    }
+
+    .dashboard-header h1 {
+      color: #333;
+      font-weight: bold;
+      margin: 0;
+    }
+
+    .dashboard-header p {
+      color: #666;
+      margin: 10px 0 0 0;
+      font-size: 16px;
+    }
+
+    .stats-card {
+      background: #ffffff;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+      border: 1px solid #eee;
+    }
+
+    .stats-number {
+      font-size: 2rem;
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 5px;
+    }
+
+    .stats-label {
+      font-size: 14px;
+      color: #666;
+    }
+
+    .stats-icon {
+    width: 50px;
+    height: 50px;
+    background: #f0f7ff;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 15px;
+    color: #0d6efd;
+    }
+
+    .recent-activity {
+      background: #ffffff;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+      border: 1px solid #eee;
+    }
+
+    .activity-item {
+      border-bottom: 1px solid #eee;
+      padding: 15px 0;
+    }
+
+    .activity-item:last-child {
+      border-bottom: none;
+    }
+
+    .activity-title {
+      font-weight: 500;
+      color: #333;
+      margin-bottom: 5px;
+    }
+
+    .activity-desc {
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 0px;
+    }
+
+    .activity-time {
+      font-size: 12px;
+      color: #999;
+    }
+
+    .col-md-3 {
+      padding: 0 10px;
+    }
+
+    .row {
+      margin: 0 -10px;
+    }
   </style>
 </head>
 <body>
@@ -120,6 +216,79 @@ $username = $_SESSION['username'];
     </div>
   
 
+  </div>
+
+  <div class="content">
+    <!-- DASHBOARD HEADER -->
+    <div class="dashboard-header">
+      <h1>Welcome, <?= $username ?></h1>
+      <p>Selamat datang di Sistem Surat Peringatan Mahasiswa</p>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row">
+      <div class="col-md-3">
+        <div class="stats-card">
+          <div class="stats-icon">
+            <i class="bi bi-calender-check"></i>
+          </div>
+          <div class="stats-number">95%</div>
+          <div class="stats-label">Kehadiran</div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="stats-card">
+          <div class="stats-icon">
+            <i class="bi bi-envelope-exclamation"></i>
+          </div>
+          <div class="stats-number">1</div>
+          <div class="stats-label">Surat Peringatan</div>
+        </div>
+      </div>
+
+      <div class="col-md-3">
+        <div class="stats-card">
+          <div class="stats-icon">
+            <i class="bi bi-clock-history"></i>
+          </div>
+          <div class="stats-number">45</div>
+          <div class="stats-label">Hari Aktif</div>
+        </div>
+      </div>
+
+      <div class="col-md-3">
+        <div class="stats-card">
+          <div class="stats-icon">
+            <i class="bi bi-person-check"></i>
+          </div>
+          <div class="stats-number">A</div>
+          <div class="stats-label">Status Akademik</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="recent-activity mt-4">
+      <h5 class="mb-3">Aktivitas Terbaru</h5>
+
+      <div class="activity-item">
+        <div class="activity-title">Absensi hari ini</div>
+        <p class="activity-desc">Anda hadir tepat waktu pada sesi pagi</p>
+        <div class="activity-time">10:30 AM</div>
+      </div>
+
+      <div class="activity-item">
+        <div class="activity-title">Surat Peringatan 1</div>
+        <p class="activity-desc">Telah diterbitkan SP untuk kehadiran</p>
+        <div class="activity-time">Kemarin</div>
+      </div>
+
+      <div class="activity-item">
+        <div class="activity-title">Perbaikan Absensi</div>
+        <p class="activity-desc">Absensi minggu lalu telah diperbaiki</p>
+        <div class="activity-time">3 hari lalu</div>
+      </div>
+    </div>
   </div>
 
   <div class="content">
