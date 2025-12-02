@@ -290,11 +290,7 @@ $username = $_SESSION['username'];
       </div>
     </div>
   </div>
-
-  <div class="content">
-    <h1>Welcome , <?= $username ?></h1>
-    <p>Selamat datang di Sistem Surat Peringatan Mahasiswa</p>
-  </div>
+  
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
