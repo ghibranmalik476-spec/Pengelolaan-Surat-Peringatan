@@ -195,6 +195,15 @@ $aktif = mysqli_fetch_assoc($aktif_result)['aktif'];
           <div class="stats-label"><?= htmlspecialchars($username) ?></div>
         </div>
       </div>
+      
+      <div class="col-md-3">
+        <div class="stats-card">
+          <div class="stats-number">Menu</div>
+          <div class="stats-label">
+            <a href="daftar_sp_staff.php?page=tambah" class="btn btn-sm" style="margin-top: 5px;">+ Buat SP</a>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 

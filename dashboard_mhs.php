@@ -289,12 +289,16 @@ $username = $_SESSION['username'];
         <div class="activity-time">3 hari lalu</div>
       </div>
     </div>
+<<<<<<< HEAD
   </div>
 
   <div class="content">
     <h1>Welcome , <?= $username ?></h1>
     <p>Selamat datang di Sistem Surat Peringatan Mahasiswa</p>
+=======
+>>>>>>> f4e94a528d0d05fc58f20d2c516cdgit0e175ad6be9
   </div>
+  
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
