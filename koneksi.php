@@ -1,14 +1,17 @@
 <?php
+// koneksi.php
 $host = "localhost";
-$user = "root";
-$pass = "";
-$db   = "project";
+$username = "root";
+$password = "";
+$database = "project";
 
-// Koneksi MySQL
-$conn = mysqli_connect($host, $user, $pass, $db);
+$conn = mysqli_connect($host, $username, $password, $database);
 
 // Cek koneksi
 if (!$conn) {
-    die("Koneksi gagal: " . mysqli_connect_error());
+    die("Koneksi database gagal: " . mysqli_connect_error());
 }
+
+// Set charset
+mysqli_set_charset($conn, "utf8");
 ?>

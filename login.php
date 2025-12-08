@@ -17,7 +17,7 @@ if (isset($_POST['login'])) {
             $_SESSION['role']     = $data['role'];
 
             if ($data['role'] == "staff") {
-                header("Location: dashboard.php"); exit;
+                header("Location: Dashboard.php"); exit;
                 
             } else if ($data['role'] == "mahasiswa") {
                 header("Location: dashboard_mhs.php"); exit;

@@ -8,6 +8,15 @@ if (!isset($_SESSION['username']) || $_SESSION['role'] != 'staff') {
 }
 
 $username = $_SESSION['username'];
+
+// Hitung statistik
+$total_query = "SELECT COUNT(*) as total FROM surat_peringatan";
+$total_result = mysqli_query($conn, $total_query);
+$total = mysqli_fetch_assoc($total_result)['total'];
+
+$aktif_query = "SELECT COUNT(*) as aktif FROM surat_peringatan WHERE status_sp = 'Aktif'";
+$aktif_result = mysqli_query($conn, $aktif_query);
+$aktif = mysqli_fetch_assoc($aktif_result)['aktif'];
 ?>
 
 <!DOCTYPE html>
@@ -60,6 +69,27 @@ $username = $_SESSION['username'];
       display: flex;
       align-items: center;
     }
+    
+    .stats-card {
+      background: #ffffff;
+      border: 1px solid #dee2e6;
+      border-radius: 0px;
+      padding: 20px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    
+    .stats-number {
+      font-size: 2rem;
+      font-weight: bold;
+      color: #212529;
+      margin-bottom: 5px;
+    }
+    
+    .stats-label {
+      color: #6c757d;
+      font-size: 14px;
+    }
   </style>
 </head>
 <body>
@@ -69,7 +99,7 @@ $username = $_SESSION['username'];
 
     <ul class="nav flex-column">
       <li class="nav-item">
-        <a class="nav-link active" href="dashboard_staff.php">Dashboard</a>
+        <a class="nav-link active" href="dashboard.php">Dashboard</a>
       </li>
 
       <li class="nav-item">
@@ -82,9 +112,21 @@ $username = $_SESSION['username'];
         </a>
         <div class="collapse submenu" id="submenuSPMahasiswa">
           <ul class="nav flex-column ms-3">
-            <li class="nav-item"><a class="nav-link" href="#">Buat SP</a></li>
-            <li class="nav-item"><a class="nav-link" href="#">Rekap / Daftar SP</a></li>
-            <li class="nav-item"><a class="nav-link" href="#">Kelola SP</a></li>
+            <li class="nav-item">
+                <a class="nav-link" href="daftar_sp_staff.php?page=tambah">
+                    Buat SP
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="daftar_sp_staff.php?page=daftar">
+                    Rekap / Daftar SP
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="daftar_sp_staff.php?page=daftar">
+                    Kelola SP
+                </a>
+            </li>
           </ul>
         </div>
       </li>
@@ -95,8 +137,16 @@ $username = $_SESSION['username'];
         </a>
         <div class="collapse submenu" id="submenuSP">
           <ul class="nav flex-column ms-3">
-            <li class="nav-item"><a class="nav-link" href="#">Cari SP</a></li>
-            <li class="nav-item"><a class="nav-link" href="SP.html">Cari Data Mahasiswa</a></li>
+            <li class="nav-item">
+                <a class="nav-link" href="daftar_sp_staff.php?page=cari">
+                    Cari SP
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#">
+                    Cari Data Mahasiswa
+                </a>
+            </li>
           </ul>
         </div>
       </li>
@@ -121,7 +171,31 @@ $username = $_SESSION['username'];
 
   <div class="content">
     <h1>Welcome to Our System , Sir <?= $username ?></h1>
-    <p>Sistem Surat Peringatan Mahasiswa </p>
+    <p>Sistem Surat Peringatan Mahasiswa</p>
+    
+    <!-- STATS CARDS -->
+    <div class="row mt-4">
+      <div class="col-md-3">
+        <div class="stats-card">
+          <div class="stats-number"><?= $total ?></div>
+          <div class="stats-label">Total SP</div>
+        </div>
+      </div>
+      
+      <div class="col-md-3">
+        <div class="stats-card">
+          <div class="stats-number"><?= $aktif ?></div>
+          <div class="stats-label">SP Aktif</div>
+        </div>
+      </div>
+      
+      <div class="col-md-3">
+        <div class="stats-card">
+          <div class="stats-number">Staff</div>
+          <div class="stats-label"><?= htmlspecialchars($username) ?></div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
