@@ -1,12 +1,12 @@
 <?php
-// ---- DATA ABSENSI ----
-$total_alpha = 3;      // Alpha diverifikasi (warna hijau)
-$total_sesi  = 16;     // Total Sesi Rencana
+// =============================
+// BAGIAN PERHITUNGAN SP
+// =============================
+$total_alpha = 3;      // jumlah alpha diverifikasi (warna hijau)
+$total_sesi  = 16;     // total rencana perkuliahan
 
-// ---- HITUNG PERSENTASE ----
 $persentase = ($total_alpha / $total_sesi) * 100;
 
-// ---- TENTUKAN SP ----
 if ($persentase >= 40) {
     $sp = "SP 3";
 } elseif ($persentase >= 20) {
@@ -21,19 +21,56 @@ if ($persentase >= 40) {
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Keterangan SP</title>
+    <title>Absensi + Keterangan SP</title>
     <style>
         body {
             font-family: Arial, sans-serif;
         }
-        .header {
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            padding: 10px;
+            text-align: center;
+            border: 1px solid #e0e0e0;
+        }
+        th {
+            background: #f8f9fa;
+            color: #8897a5;
+            font-weight: bold;
+        }
+        .keterangan {
+            background: #f8f9fa;
+            padding: 12px;
+            font-size: 16px;
+            border: 1px solid #e0e0e0;
+            margin-bottom: 30px;
+        }
+        .green-box {
+            width: 15px;
+            height: 15px;
+            background: green;
+            display: inline-block;
+        }
+        .red-box {
+            width: 15px;
+            height: 15px;
+            background: red;
+            display: inline-block;
+        }
+
+        /* Bagian KETERANGAN SP */
+        .header-sp {
             background-color: #ffc400;
             padding: 12px;
             font-size: 20px;
             font-weight: bold;
             color: #003087;
+            margin-top: 25px;
         }
-        .box {
+        .box-sp {
             border: 2px solid #ffc400;
             padding: 20px;
         }
@@ -41,9 +78,6 @@ if ($persentase >= 40) {
             border-left: 4px solid #000;
             padding-left: 20px;
             margin-top: 10px;
-        }
-        ul {
-            font-size: 18px;
         }
         .label {
             font-size: 20px;
@@ -58,9 +92,44 @@ if ($persentase >= 40) {
 
 <body>
 
-<div class="header">KETERANGAN SP</div>
+<!-- ========================= -->
+<!-- BAGIAN HEADER ABSENSI     -->
+<!-- ========================= -->
 
-<div class="box">
+<table>
+    <tr>
+        <th rowspan="2">KODE<br>MK</th>
+        <th rowspan="2">MATAKULIAH</th>
+        <th rowspan="2">JENIS</th>
+        <th colspan="16">MINGGU KE</th>
+    </tr>
+    <tr>
+        <?php 
+        for ($i = 1; $i <= 16; $i++) {
+            echo "<th>$i</th>";
+        }
+        ?>
+    </tr>
+</table>
+
+<div class="keterangan">
+    <b>KET :</b> &nbsp;&nbsp;
+    H = Hadir,&nbsp;&nbsp;
+    A = Alpha,&nbsp;&nbsp;
+    - = Tidak Ada Perkuliahan,&nbsp;&nbsp;
+
+    <span class="green-box"></span> = Sudah Diverifikasi,&nbsp;&nbsp;
+    <span class="red-box"></span> = Belum Diverifikasi
+</div>
+
+
+<!-- ========================= -->
+<!-- BAGIAN KETERANGAN SP      -->
+<!-- ========================= -->
+
+<div class="header-sp">KETERANGAN SP</div>
+
+<div class="box-sp">
 
     <div class="left-line">
         <b>Persentase ketidakhadiran:</b>
@@ -71,16 +140,20 @@ if ($persentase >= 40) {
         </ul>
     </div>
 
-    <br><br>
+    <br>
 
-    <div class="label">SP : <span class="value"><?= $sp ?></span></div>
+    <div class="label">
+        SP : <span class="value"><?= $sp ?></span>
+        &nbsp;&nbsp;&nbsp;
+        (<?= number_format($persentase, 2) ?>%)
+    </div>
 
-    <br><br>
+    <br>
 
     <div class="left-line">
         <b>Rumus Hitung:</b>
         <ul>
-            <li>SP = Total Alpha / Total Sesi Rencana * 100%</li>
+            <li>SP = Total Alpha / Total Sesi Rencana × 100%</li>
         </ul>
         <i>*Hanya menghitung absensi yang sudah diverifikasi/warna hijau.</i>
     </div>
