@@ -169,7 +169,7 @@ $username = $_SESSION['username'];
 
     <ul class="nav flex-column">
       <li class="nav-item">
-        <a class="nav-link active" href="dashboard_mahasiswa.php">Dashboard</a>
+        <a class="nav-link active" href="dashboard_mhs.php">Dashboard</a>
       </li>
 
       <li class="nav-item">
@@ -289,16 +289,53 @@ $username = $_SESSION['username'];
         <div class="activity-time">3 hari lalu</div>
       </div>
     </div>
-<<<<<<< HEAD
   </div>
 
-  <div class="content">
-    <h1>Welcome , <?= $username ?></h1>
-    <p>Selamat datang di Sistem Surat Peringatan Mahasiswa</p>
-=======
->>>>>>> f4e94a528d0d05fc58f20d2c516cdgit0e175ad6be9
+  <!-- Modal Peraturan -->
+  <div class="modal fade" id="peraturanModal" tabindex="-1">
+    <div class="modal-dialog modal-lg"><div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Peraturan</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <h6>Peraturan Penggunaan Sistem</h6>
+        <ol>
+          <li>Semua pengguna harus menggunakan akun pribadi dan tidak boleh membagikan kredensial login.</li>
+          <li>Data yang dimasukkan harus akurat dan sesuai dengan kebijakan universitas.</li>
+          <li>Dilarang mengakses atau mengubah data tanpa izin.</li>
+          <li>Pelanggaran terhadap peraturan ini dapat mengakibatkan penangguhan atau penghentian akses.</li>
+          <li>Untuk pertanyaan lebih lanjut, hubungi administrator sistem.</li>
+        </ol>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+      </div>
+    </div></div>
   </div>
-  
+
+  <!-- Modal Change Password -->
+  <div class="modal fade" id="changePasswordModal" tabindex="-1">
+    <div class="modal-dialog"><div class="modal-content">
+      <form action="change_password.php" method="POST">
+        <div class="modal-header">
+          <h5 class="modal-title">Change Password</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <label>Password Lama</label>
+          <input type="password" name="old_password" class="form-control mb-2" required>
+          <label>Password Baru</label>
+          <input type="password" name="new_password" class="form-control mb-2" required>
+          <label>Konfirmasi Password Baru</label>
+          <input type="password" name="confirm_password" class="form-control mb-2" required>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary">Simpan</button>
+        </div>
+      </form>
+    </div></div>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>

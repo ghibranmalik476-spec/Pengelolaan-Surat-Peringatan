@@ -5,22 +5,28 @@ $error = "";
 
 if (isset($_POST['login'])) {
     $username = trim($_POST['username']);
+    $nik      = $_POST['nik'];
     $password = $_POST['password'];
 
-    $query = mysqli_query($conn, "SELECT * FROM user WHERE username='$username' LIMIT 1");
+    $query = mysqli_query($conn, "SELECT * FROM user WHERE nik='$nik' LIMIT 1");
     $data = mysqli_fetch_assoc($query);
 
     if ($data) {
         if (password_verify($password, $data['password'])) {
 
+            $_SESSION['nik'] = $data['nik'];
             $_SESSION['username'] = $data['username'];
             $_SESSION['role']     = $data['role'];
 
             if ($data['role'] == "staff") {
-                header("Location: Dashboard.php"); exit;
+                header("Location: dashboard.php"); exit;
                 
             } else if ($data['role'] == "mahasiswa") {
                 header("Location: dashboard_mhs.php"); exit;
+                
+            }
+            else if ($data['role'] == "admin") {
+                header("Location: dashboard_admin.php"); exit;
             }
 
         } else {
@@ -42,6 +48,11 @@ if (isset($_POST['login'])) {
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
   <style>
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
     body {
       background: url('https://learning-if.polibatam.ac.id/pluginfile.php/1/theme_moove/sliderimage1/1756270195/DJI_0066.JPG%20%282%29.jpg') 
                   no-repeat center center fixed;
@@ -72,8 +83,8 @@ if (isset($_POST['login'])) {
 
         <form method="POST">
             <div class="mb-3">
-                <label class="form-label">Username</label>
-                <input type="text" class="form-control" name="username" required>
+                <label class="form-label">NIK</label>
+                <input type="number" class="form-control" name="nik" required>
             </div>
 
             <div class="mb-3">
