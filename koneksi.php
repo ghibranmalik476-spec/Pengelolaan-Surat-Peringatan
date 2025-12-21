@@ -1,12 +1,18 @@
 <?php
+// Koneksi database
 $host = "localhost";
-$user = "root";
-$pass = "";
-$db   = "project";
+$username = "root";  // default XAMPP
+$password = "";      // default XAMPP kosong
+$database = "project"; // sesuaikan dengan database Anda
 
-$conn = mysqli_connect($host, $user, $pass, $db);
+// Buat koneksi
+$koneksi = mysqli_connect($host, $username, $password, $database);
 
-if (!$conn) {
-    die("Koneksi gagal: " . mysqli_connect_error());
+// Cek koneksi
+if (!$koneksi) {
+    die("Koneksi database gagal: " . mysqli_connect_error());
 }
+
+// Set charset
+mysqli_set_charset($koneksi, "utf8");
 ?>
