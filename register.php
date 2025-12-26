@@ -13,12 +13,12 @@ if (isset($_POST['register'])) {
     if ($password != $ulang) {
         $error = "Password tidak sama!";
     } else {
-        $q = mysqli_query($conn, "SELECT * FROM user WHERE username='$username'");
+        $q = mysqli_query($koneksi, "SELECT * FROM user WHERE username='$username'");
         if (mysqli_num_rows($q) > 0) {
             $error = "Username sudah dipakai!";
         } else {
             $hash = password_hash($password, PASSWORD_DEFAULT);
-            $insert = mysqli_query($conn, "
+            $insert = mysqli_query($koneksi, "
                 INSERT INTO user (username, password, role)
                 VALUES ('$username', '$hash', '$role')
             ");

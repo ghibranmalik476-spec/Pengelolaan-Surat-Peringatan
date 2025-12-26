@@ -4,11 +4,10 @@ require 'koneksi.php';
 $error = "";
 
 if (isset($_POST['login'])) {
-    $username = trim($_POST['username']);
     $nik      = $_POST['nik'];
     $password = $_POST['password'];
 
-    $query = mysqli_query($conn, "SELECT * FROM user WHERE nik='$nik' LIMIT 1");
+    $query = mysqli_query($koneksi, "SELECT * FROM user WHERE nik='$nik' LIMIT 1");
     $data = mysqli_fetch_assoc($query);
 
     if ($data) {
@@ -19,7 +18,7 @@ if (isset($_POST['login'])) {
             $_SESSION['role']     = $data['role'];
 
             if ($data['role'] == "staff") {
-                header("Location: dashboard.php"); exit;
+                header("Location: dashboard_staff.php"); exit;
                 
             } else if ($data['role'] == "mahasiswa") {
                 header("Location: dashboard_mhs.php"); exit;

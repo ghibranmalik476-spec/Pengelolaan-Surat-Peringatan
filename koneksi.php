@@ -1,9 +1,9 @@
 <?php
-// Koneksi database
+// koneksi database
 $host = "localhost";
 $username = "root";  // default XAMPP
 $password = "";      // default XAMPP kosong
-$database = "project"; // sesuaikan dengan database Anda
+$database = "project2"; // sesuaikan dengan database Anda
 
 // Buat koneksi
 $koneksi = mysqli_connect($host, $username, $password, $database);

@@ -112,7 +112,7 @@ body { background-color: #f8f9fa; }
         </thead>
         <tbody>
         <?php
-        $q = mysqli_query($conn, "SELECT id, nik, role, username FROM user ORDER BY role ASC, nik ASC");
+        $q = mysqli_query($koneksi, "SELECT id, nik, role, username FROM user ORDER BY role ASC, nik ASC");
         while($u = mysqli_fetch_assoc($q)):
         ?>
         <tr>
@@ -140,29 +140,49 @@ body { background-color: #f8f9fa; }
 
 <!-- Modal Tambah User -->
 <div class="modal fade" id="tambahUserModal" tabindex="-1">
-  <div class="modal-dialog"><div class="modal-content">
-    <form action="tambah.php" method="POST">
-      <div class="modal-header">
-        <h5 class="modal-title">Tambah User</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <label>Role</label>
-        <select name="role" class="form-control mb-2" required>
-          <option value="">Pilih Role</option>
-          <option value="admin">Admin</option>
-          <option value="staff">Staff Akademik</option>
-          <option value="mahasiswa">Mahasiswa</option>
-        </select>
-        <label>NIK</label>
-        <input type="number" name="nik" class="form-control mb-2" required>
-        <label>Username</label>
-        <input type="text" name="username" class="form-control mb-2" required>
-      </div>
-      <div class="modal-footer"><button type="submit" class="btn btn-primary">Simpan</button></div>
-    </form>
-  </div></div>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form action="tambah.php" method="POST">
+        <div class="modal-header">
+          <h5 class="modal-title">Tambah User</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+
+        <div class="modal-body">
+
+          <label>Role</label>
+          <select name="role" id="role" class="form-control mb-2" required>
+            <option value="">Pilih Role</option>
+            <option value="admin">Admin</option>
+            <option value="staff">Staff Akademik</option>
+            <option value="mahasiswa">Mahasiswa</option>
+          </select>
+
+          <label>NIK</label>
+          <input type="text" name="nik" class="form-control mb-2" required>
+
+          <label>Username</label>
+          <input type="text" name="username" class="form-control mb-2" required>
+
+          <!-- KHUSUS MAHASISWA -->
+          <div id="mahasiswaFields" style="display:none;">
+            <label>Nama Mahasiswa</label>
+            <input type="text" name="nama" class="form-control mb-2">
+
+            <label>Jurusan</label>
+            <input type="text" name="jurusan" class="form-control mb-2">
+          </div>
+
+        </div>
+
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary">Simpan</button>
+        </div>
+      </form>
+    </div>
+  </div>
 </div>
+
 
 <!-- Modal Edit User -->
 <div class="modal fade" id="editUserModal" tabindex="-1">
@@ -238,6 +258,19 @@ body { background-color: #f8f9fa; }
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+document.getElementById('role').addEventListener('change', function () {
+    const mhs = document.getElementById('mahasiswaFields');
+    if (this.value === 'mahasiswa') {
+        mhs.style.display = 'block';
+        mhs.querySelectorAll('input').forEach(i => i.required = true);
+    } else {
+        mhs.style.display = 'none';
+        mhs.querySelectorAll('input').forEach(i => i.required = false);
+    }
+});
+</script>
+
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const editButtons = document.querySelectorAll('.editBtn');

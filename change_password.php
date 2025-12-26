@@ -27,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 
     // Get current password from database
-    $stmt = $conn->prepare("SELECT password FROM user WHERE nik = ?");
+    $stmt = $koneksi->prepare("SELECT password FROM user WHERE nik = ?");
     $stmt->bind_param("s", $nik);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -41,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     // Update password
     $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
-    $stmt = $conn->prepare("UPDATE user SET password = ? WHERE nik = ?");
+    $stmt = $koneksi->prepare("UPDATE user SET password = ? WHERE nik = ?");
     $stmt->bind_param("ss", $hashed_password, $nik);
     if ($stmt->execute()) {
         $_SESSION['success'] = "Password berhasil diubah.";

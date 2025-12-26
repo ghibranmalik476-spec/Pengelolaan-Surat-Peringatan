@@ -13,12 +13,12 @@ $username = $_SESSION['username'];
 
 // 1. TAMBAH SP
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['tambah_sp'])) {
-    $nim = mysqli_real_escape_string($conn, $_POST['nim']);
-    $nama_mahasiswa = mysqli_real_escape_string($conn, $_POST['nama_mahasiswa']);
-    $prodi = mysqli_real_escape_string($conn, $_POST['prodi']);
-    $semester = mysqli_real_escape_string($conn, $_POST['semester']);
-    $jenis_sp = mysqli_real_escape_string($conn, $_POST['jenis_sp']);
-    $alasan = mysqli_real_escape_string($conn, $_POST['alasan']);
+    $nim = mysqli_real_escape_string($koneksi, $_POST['nim']);
+    $nama_mahasiswa = mysqli_real_escape_string($koneksi, $_POST['nama_mahasiswa']);
+    $prodi = mysqli_real_escape_string($koneksi, $_POST['prodi']);
+    $semester = mysqli_real_escape_string($koneksi, $_POST['semester']);
+    $jenis_sp = mysqli_real_escape_string($koneksi, $_POST['jenis_sp']);
+    $alasan = mysqli_real_escape_string($koneksi, $_POST['alasan']);
     $tanggal_terbit = date('Y-m-d');
     $status_sp = 'Aktif';
     
@@ -26,21 +26,21 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['tambah_sp'])) {
               (nim, nama_mahasiswa, prodi, semester, jenis_sp, alasan, tanggal_terbit, status_sp, created_by) 
               VALUES ('$nim', '$nama_mahasiswa', '$prodi', '$semester', '$jenis_sp', '$alasan', '$tanggal_terbit', '$status_sp', '$username')";
     
-    if (mysqli_query($conn, $query)) {
+    if (mysqli_query($koneksi, $query)) {
         $success = "SP berhasil ditambahkan!";
     } else {
-        $error = "Gagal: " . mysqli_error($conn);
+        $error = "Gagal: " . mysqli_error($koneksi);
     }
 }
 
 // 2. EDIT SP
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['edit_sp'])) {
     $id = $_POST['id'];
-    $nim = mysqli_real_escape_string($conn, $_POST['nim']);
-    $nama_mahasiswa = mysqli_real_escape_string($conn, $_POST['nama_mahasiswa']);
-    $prodi = mysqli_real_escape_string($conn, $_POST['prodi']);
-    $jenis_sp = mysqli_real_escape_string($conn, $_POST['jenis_sp']);
-    $alasan = mysqli_real_escape_string($conn, $_POST['alasan']);
+    $nim = mysqli_real_escape_string($koneksi, $_POST['nim']);
+    $nama_mahasiswa = mysqli_real_escape_string($koneksi, $_POST['nama_mahasiswa']);
+    $prodi = mysqli_real_escape_string($koneksi, $_POST['prodi']);
+    $jenis_sp = mysqli_real_escape_string($koneksi, $_POST['jenis_sp']);
+    $alasan = mysqli_real_escape_string($koneksi, $_POST['alasan']);
     
     $query = "UPDATE surat_peringatan SET 
               nim = '$nim', 
@@ -50,10 +50,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['edit_sp'])) {
               alasan = '$alasan' 
               WHERE id = $id";
     
-    if (mysqli_query($conn, $query)) {
+    if (mysqli_query($koneksi, $query)) {
         $success = "SP berhasil diupdate!";
     } else {
-        $error = "Gagal: " . mysqli_error($conn);
+        $error = "Gagal: " . mysqli_error($koneksi);
     }
 }
 
@@ -61,7 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['edit_sp'])) {
 if (isset($_GET['hapus'])) {
     $id = $_GET['hapus'];
     $query = "DELETE FROM surat_peringatan WHERE id = $id";
-    if (mysqli_query($conn, $query)) {
+    if (mysqli_query($koneksi, $query)) {
         $success = "SP berhasil dihapus!";
     }
 }
@@ -82,24 +82,24 @@ if (!empty($search)) {
     $query = "SELECT * FROM surat_peringatan ORDER BY tanggal_terbit DESC";
 }
 
-$result = mysqli_query($conn, $query);
+$result = mysqli_query($koneksi, $query);
 
 // Ambil data untuk edit/detail
 $sp_data = null;
 if (isset($_GET['id']) && ($action == 'edit' || $action == 'detail')) {
     $id = $_GET['id'];
     $query_detail = "SELECT * FROM surat_peringatan WHERE id = $id";
-    $result_detail = mysqli_query($conn, $query_detail);
+    $result_detail = mysqli_query($koneksi, $query_detail);
     $sp_data = mysqli_fetch_assoc($result_detail);
 }
 
 // Hitung statistik
 $total_query = "SELECT COUNT(*) as total FROM surat_peringatan";
-$total_result = mysqli_query($conn, $total_query);
+$total_result = mysqli_query($koneksi, $total_query);
 $total = mysqli_fetch_assoc($total_result)['total'];
 
 $aktif_query = "SELECT COUNT(*) as aktif FROM surat_peringatan WHERE status_sp = 'Aktif'";
-$aktif_result = mysqli_query($conn, $aktif_query);
+$aktif_result = mysqli_query($koneksi, $aktif_query);
 $aktif = mysqli_fetch_assoc($aktif_result)['aktif'];
 ?>
 
@@ -374,7 +374,7 @@ $aktif = mysqli_fetch_assoc($aktif_result)['aktif'];
                 <?php
                 $id = $_GET['id'];
                 $query = "SELECT * FROM surat_peringatan WHERE id = $id";
-                $result = mysqli_query($conn, $query);
+                $result = mysqli_query($koneksi, $query);
                 $sp_data = mysqli_fetch_assoc($result);
                 
                 if (!$sp_data) {
@@ -444,7 +444,7 @@ $aktif = mysqli_fetch_assoc($aktif_result)['aktif'];
                 <?php
                 $id = $_GET['id'];
                 $query = "SELECT * FROM surat_peringatan WHERE id = $id";
-                $result = mysqli_query($conn, $query);
+                $result = mysqli_query($koneksi, $query);
                 $sp_data = mysqli_fetch_assoc($result);
                 
                 if (!$sp_data) {

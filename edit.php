@@ -19,10 +19,10 @@ if ($id && $nik && $username && $role) {
               SET nik='$nik', username='$username', role='$role'
               WHERE id='$id'";
 
-    mysqli_query($conn, $query);
+    mysqli_query($koneksi, $query);
 
     $_SESSION['success'] = "User berhasil diperbarui!";
 }
 
-header("Location: dashboard_admin.php");
+header("Location: daftar.php");
 exit;
