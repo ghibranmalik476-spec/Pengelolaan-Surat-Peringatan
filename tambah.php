@@ -1,86 +1,85 @@
 <?php
 session_start();
-if (!isset($_SESSION['role']) || $_SESSION['role'] != 'admin') {
+if (!isset($_SESSION['username']) || $_SESSION['role'] !== 'admin') {
     header("Location: login.php");
     exit;
 }
 
 include 'koneksi.php';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header("Location: daftar.php");
+    exit;
+}
 
-    $role     = $_POST['role'];
-    $nik      = trim($_POST['nik']);
-    $username = trim($_POST['username'] ?? '');
-    $nama     = trim($_POST['nama'] ?? '');
-    $jurusan  = trim($_POST['jurusan'] ?? '');
+$role     = $_POST['role'] ?? '';
+$nik      = trim($_POST['nik'] ?? '');
+$username = trim($_POST['username'] ?? '');
+$nama     = trim($_POST['nama'] ?? '');
+$jurusan  = trim($_POST['jurusan'] ?? '');
 
-    if (!$nik || !$role) {
-        $_SESSION['error'] = "NIK dan Role wajib diisi!";
-        header("Location: daftar.php");
-        exit;
+if (!$role || !$nik || !$username) {
+    $_SESSION['error'] = "Data wajib belum lengkap";
+    header("Location: daftar.php");
+    exit;
+}
+
+// password awal = nik
+$password = password_hash($nik, PASSWORD_DEFAULT);
+
+mysqli_begin_transaction($koneksi);
+
+try {
+
+    // =============================
+    // CEK DUPLIKAT NIK / USERNAME
+    // =============================
+    $cek = $koneksi->prepare(
+        "SELECT id FROM user WHERE nik = ? OR username = ?"
+    );
+    $cek->bind_param("ss", $nik, $username);
+    $cek->execute();
+    $cek->store_result();
+
+    if ($cek->num_rows > 0) {
+        throw new Exception("NIK atau Username sudah terdaftar");
     }
 
-    mysqli_begin_transaction($koneksi);
+    // =============================
+    // ROLE MAHASISWA
+    // =============================
+    if ($role === 'mahasiswa') {
 
-    try {
-
-        // Cek NIK sudah ada di user
-        $cek_user = mysqli_query($koneksi, "SELECT nik FROM user WHERE nik='$nik'");
-        if (mysqli_num_rows($cek_user) > 0) {
-            throw new Exception("NIK sudah terdaftar!");
+        if (!$nama || !$jurusan) {
+            throw new Exception("Nama dan Jurusan wajib diisi untuk mahasiswa");
         }
 
-        $password = password_hash($nik, PASSWORD_DEFAULT);
-
-        // =====================
-        // MAHASISWA
-        // =====================
-        if ($role === 'mahasiswa') {
-
-            if (!$nama || !$jurusan) {
-                throw new Exception("Nama dan jurusan wajib diisi!");
-            }
-
-            // insert mahasiswa
-            mysqli_query($koneksi, "
-                INSERT INTO mahasiswa (nik, nama, jurusan)
-                VALUES ('$nik','$nama','$jurusan')
-            ");
-
-            // insert user mahasiswa
-            mysqli_query($koneksi, "
-                INSERT INTO user (nik, username, password, role)
-                VALUES ('$nik','$nama','$password','mahasiswa')
-            ");
-
-        }
-        // =====================
-        // ADMIN / STAFF
-        // =====================
-        else {
-
-            if (!$username) {
-                throw new Exception("Username wajib diisi!");
-            }
-
-            mysqli_query($koneksi, "
-                INSERT INTO user (nik, username, password, role)
-                VALUES ('$nik','$username','$password','$role')
-            ");
-        }
-
-        mysqli_commit($koneksi);
-
-        $_SESSION['success'] =
-            "User berhasil ditambahkan.
-            Username: " . ($role === 'mahasiswa' ? $nama : $username) . "
-            | Password awal: $nik";
-
-    } catch (Exception $e) {
-        mysqli_rollback($koneksi);
-        $_SESSION['error'] = $e->getMessage();
+        // insert mahasiswa
+        $stmt = $koneksi->prepare(
+            "INSERT INTO mahasiswa (nik, nama, jurusan)
+             VALUES (?,?,?)"
+        );
+        $stmt->bind_param("sss", $nik, $nama, $jurusan);
+        $stmt->execute();
     }
+
+    // =============================
+    // INSERT USER (SEMUA ROLE)
+    // =============================
+    $stmt = $koneksi->prepare(
+        "INSERT INTO user (nik, username, password, role)
+         VALUES (?,?,?,?)"
+    );
+    $stmt->bind_param("ssss", $nik, $username, $password, $role);
+    $stmt->execute();
+
+    mysqli_commit($koneksi);
+
+    $_SESSION['success'] = "User berhasil ditambahkan";
+
+} catch (Exception $e) {
+    mysqli_rollback($koneksi);
+    $_SESSION['error'] = $e->getMessage();
 }
 
 header("Location: daftar.php");

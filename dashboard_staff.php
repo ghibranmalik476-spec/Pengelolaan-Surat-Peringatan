@@ -17,12 +17,12 @@ $id_sp = $_GET['id'] ?? 0;
 $message = $_GET['message'] ?? '';
 $search = $_GET['search'] ?? '';
 $pdf_action = $_GET['pdf_action'] ?? '';
-$nim_search = $_GET['nim_search'] ?? '';
+$nik_search = $_GET['nik_search'] ?? '';
 
 // FUNGSI UTAMA
 function getSPData($koneksi, $search = '') {
-    $query = "SELECT sp.*, m.nama as nama_mahasiswa, m.jurusan, m.email FROM surat_peringatan sp LEFT JOIN mahasiswa m ON sp.nim = m.nim WHERE 1=1";
-    if (!empty($search)) $query .= " AND (sp.nim LIKE '%$search%' OR m.nama LIKE '%$search%')";
+    $query = "SELECT sp.*, m.nama as nama_mahasiswa, m.jurusan, m.email FROM surat_peringatan sp LEFT JOIN mahasiswa m ON sp.nik = m.nik WHERE 1=1";
+    if (!empty($search)) $query .= " AND (sp.nik LIKE '%$search%' OR m.nama LIKE '%$search%')";
     $query .= " ORDER BY sp.tanggal DESC, sp.id DESC";
     $result = mysqli_query($koneksi, $query);
     $data = [];
@@ -39,7 +39,7 @@ function getMahasiswaData($koneksi) {
 }
 
 function getSPDetail($koneksi, $id) {
-    $query = "SELECT sp.*, m.nama as nama_mahasiswa, m.email, m.jurusan, m.alamat FROM surat_peringatan sp LEFT JOIN mahasiswa m ON sp.nim = m.nim WHERE sp.id = '$id'";
+    $query = "SELECT sp.*, m.nama as nama_mahasiswa, m.email, m.jurusan, m.alamat FROM surat_peringatan sp LEFT JOIN mahasiswa m ON sp.nik = m.nik WHERE sp.id = '$id'";
     $result = mysqli_query($koneksi, $query);
     return ($result && mysqli_num_rows($result) > 0) ? mysqli_fetch_assoc($result) : null;
 }
@@ -56,7 +56,7 @@ function getDashboardStats($koneksi) {
         $result = mysqli_query($koneksi, $sql);
         $stats[$key] = $result ? mysqli_fetch_assoc($result)[$key == 'sp_aktif' ? 'aktif' : ($key == 'sp_hari_ini' ? 'hari_ini' : 'total')] : 0;
     }
-    $jurusan_query = "SELECT m.jurusan, COUNT(sp.id) as jumlah FROM surat_peringatan sp LEFT JOIN mahasiswa m ON sp.nim = m.nim WHERE m.jurusan != '' GROUP BY m.jurusan ORDER BY jumlah DESC LIMIT 1";
+    $jurusan_query = "SELECT m.jurusan, COUNT(sp.id) as jumlah FROM surat_peringatan sp LEFT JOIN mahasiswa m ON sp.nik = m.nik WHERE m.jurusan != '' GROUP BY m.jurusan ORDER BY jumlah DESC LIMIT 1";
     $jurusan_result = mysqli_query($koneksi, $jurusan_query);
     if ($jurusan_result && mysqli_num_rows($jurusan_result) > 0) {
         $row = mysqli_fetch_assoc($jurusan_result);
@@ -70,15 +70,15 @@ function getDashboardStats($koneksi) {
 }
 
 function getSPTerbaru($koneksi) {
-    $query = "SELECT sp.*, m.nama as nama_mahasiswa FROM surat_peringatan sp LEFT JOIN mahasiswa m ON sp.nim = m.nim ORDER BY sp.tanggal DESC, sp.id DESC LIMIT 5";
+    $query = "SELECT sp.*, m.nama as nama_mahasiswa FROM surat_peringatan sp LEFT JOIN mahasiswa m ON sp.nik = m.nik ORDER BY sp.tanggal DESC, sp.id DESC LIMIT 5";
     $result = mysqli_query($koneksi, $query);
     $data = [];
     if ($result) while ($row = mysqli_fetch_assoc($result)) $data[] = $row;
     return $data;
 }
 
-function getMahasiswaDetail($koneksi, $nim) {
-    $query = "SELECT * FROM mahasiswa WHERE nim = '$nim'";
+function getMahasiswaDetail($koneksi, $nik) {
+    $query = "SELECT * FROM mahasiswa WHERE nik = '$nik'";
     $result = mysqli_query($koneksi, $query);
     return ($result && mysqli_num_rows($result) > 0) ? mysqli_fetch_assoc($result) : null;
 }
@@ -86,7 +86,7 @@ function getMahasiswaDetail($koneksi, $nim) {
 // PROSES CRUD
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     if (isset($_POST['tambah_sp'])) {
-        $nim = mysqli_real_escape_string($koneksi, $_POST['nim']);
+        $nik = mysqli_real_escape_string($koneksi, $_POST['nik']);
         $jenis_sp = mysqli_real_escape_string($koneksi, $_POST['jenis_sp']);
         $alasan = mysqli_real_escape_string($koneksi, $_POST['alasan']);
         $tanggal = mysqli_real_escape_string($koneksi, $_POST['tanggal']);
@@ -94,16 +94,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $keterangan = mysqli_real_escape_string($koneksi, $_POST['keterangan'] ?? '');
         
         // Cek mahasiswa
-        $cek_mahasiswa = mysqli_query($koneksi, "SELECT * FROM mahasiswa WHERE nim = '$nim'");
+        $cek_mahasiswa = mysqli_query($koneksi, "SELECT * FROM mahasiswa WHERE nik = '$nik'");
         if (mysqli_num_rows($cek_mahasiswa) == 0) {
             $nama = mysqli_real_escape_string($koneksi, $_POST['nama_mahasiswa'] ?? 'Mahasiswa Baru');
             $jurusan = mysqli_real_escape_string($koneksi, $_POST['jurusan'] ?? 'Belum diisi');
-            mysqli_query($koneksi, "INSERT INTO mahasiswa (nim, nama, jurusan, created_at) VALUES ('$nim', '$nama', '$jurusan', NOW())");
+            mysqli_query($koneksi, "INSERT INTO mahasiswa (nik, nama, jurusan, created_at) VALUES ('$nik', '$nama', '$jurusan', NOW())");
         }
         
-        $query = "INSERT INTO surat_peringatan (nim, jenis_sp, tanggal, alasan, status, keterangan) VALUES ('$nim', '$jenis_sp', '$tanggal', '$alasan', '$status', '$keterangan')";
+        $query = "INSERT INTO surat_peringatan (nik, jenis_sp, tanggal, alasan, status, keterangan) VALUES ('$nik', '$jenis_sp', '$tanggal', '$alasan', '$status', '$keterangan')";
         if (mysqli_query($koneksi, $query)) {
-            header("Location: ?action=rekap&message=" . urlencode("SP berhasil ditambahkan untuk NIM $nim"));
+            header("Location: ?action=rekap&message=" . urlencode("SP berhasil ditambahkan untuk nik $nik"));
             exit;
         } else {
             $message = "Gagal menambahkan SP: " . mysqli_error($koneksi);
@@ -156,8 +156,8 @@ foreach ($sp_data as $sp) {
 
 // DATA MAHASISWA DASHBOARD
 $mahasiswa_detail = null;
-if ($action == 'dashboard' && !empty($nim_search)) {
-    $mahasiswa_detail = getMahasiswaDetail($koneksi, $nim_search);
+if ($action == 'dashboard' && !empty($nik_search)) {
+    $mahasiswa_detail = getMahasiswaDetail($koneksi, $nik_search);
 }
 ?>
 
@@ -238,16 +238,16 @@ if ($action == 'dashboard' && !empty($nim_search)) {
           <h5 class="card-title">Cari Data Mahasiswa</h5>
           <form method="GET" class="row g-3">
             <input type="hidden" name="action" value="dashboard">
-            <div class="col-md-8"><input type="text" name="nim_search" class="form-control" placeholder="Masukkan NIM Mahasiswa" value="<?= htmlspecialchars($nim_search) ?>" required></div>
+            <div class="col-md-8"><input type="text" name="nik_search" class="form-control" placeholder="Masukkan nik Mahasiswa" value="<?= htmlspecialchars($nik_search) ?>" required></div>
             <div class="col-md-4"><button type="submit" class="btn btn-primary w-100"><i class="bi bi-search me-2"></i>Cari Mahasiswa</button></div>
           </form>
         </div>
       </div>
       
-      <?php if (!empty($nim_search)): ?>
+      <?php if (!empty($nik_search)): ?>
         <?php if ($mahasiswa_detail): ?>
           <?php 
-          $riwayat_sp = getSPData($koneksi, $mahasiswa_detail['nim']);
+          $riwayat_sp = getSPData($koneksi, $mahasiswa_detail['nik']);
           $total_sp_mahasiswa = count($riwayat_sp);
           $sp_aktif_mahasiswa = 0;
           $sp_selesai_mahasiswa = 0;
@@ -261,7 +261,7 @@ if ($action == 'dashboard' && !empty($nim_search)) {
             <h5><i class="bi bi-person-badge me-2"></i>Data Identitas Mahasiswa</h5>
             <div class="row">
               <div class="col-md-6">
-                <div class="info-item"><span class="info-label">NIM:</span><span class="info-value float-end"><?= htmlspecialchars($mahasiswa_detail['nim']) ?></span></div>
+                <div class="info-item"><span class="info-label">nik:</span><span class="info-value float-end"><?= htmlspecialchars($mahasiswa_detail['nik']) ?></span></div>
                 <div class="info-item"><span class="info-label">Nama:</span><span class="info-value float-end"><?= htmlspecialchars($mahasiswa_detail['nama']) ?></span></div>
                 <div class="info-item"><span class="info-label">Jurusan:</span><span class="info-value float-end"><?= htmlspecialchars($mahasiswa_detail['jurusan'] ?? 'Belum diisi') ?></span></div>
               </div>
@@ -341,7 +341,7 @@ if ($action == 'dashboard' && !empty($nim_search)) {
           </div>
           
         <?php else: ?>
-          <div class="alert alert-warning"><i class="bi bi-exclamation-triangle me-2"></i>Mahasiswa dengan NIM <strong><?= htmlspecialchars($nim_search) ?></strong> tidak ditemukan.</div>
+          <div class="alert alert-warning"><i class="bi bi-exclamation-triangle me-2"></i>Mahasiswa dengan nik <strong><?= htmlspecialchars($nik_search) ?></strong> tidak ditemukan.</div>
         <?php endif; ?>
       <?php else: ?>
         <!-- STATISTIK SISTEM -->
@@ -424,7 +424,7 @@ if ($action == 'dashboard' && !empty($nim_search)) {
               <p>Generate surat peringatan otomatis dari data SP</p>
               <form method="GET" action="cetak_pdf.php">
                 <select name="id" class="form-select mb-3" required><option value="">Pilih Data SP</option>
-                  <?php foreach ($sp_data as $sp): ?><option value="<?= $sp['id'] ?>">SP<?= $sp['jenis_sp'] ?> - <?= $sp['nim'] ?> - <?= $sp['nama_mahasiswa'] ?></option><?php endforeach; ?>
+                  <?php foreach ($sp_data as $sp): ?><option value="<?= $sp['id'] ?>">SP<?= $sp['jenis_sp'] ?> - <?= $sp['nik'] ?> - <?= $sp['nama_mahasiswa'] ?></option><?php endforeach; ?>
                 </select>
                 <button type="submit" class="btn btn-primary w-100"><i class="bi bi-printer me-2"></i>Generate & Cetak SP</button>
               </form>
@@ -441,7 +441,7 @@ if ($action == 'dashboard' && !empty($nim_search)) {
         <h4 class="mb-0"><i class="bi bi-list-ul me-2"></i>Rekap Surat Peringatan</h4>
         <form method="GET" class="d-flex me-2" style="max-width: 300px;">
           <input type="hidden" name="action" value="rekap">
-          <input type="text" name="search" class="form-control me-2" placeholder="Cari NIM/Nama..." value="<?= htmlspecialchars($search) ?>">
+          <input type="text" name="search" class="form-control me-2" placeholder="Cari nik/Nama..." value="<?= htmlspecialchars($search) ?>">
           <button type="submit" class="btn btn-primary"><i class="bi bi-search"></i></button>
         </form>
       </div>
@@ -462,7 +462,7 @@ if ($action == 'dashboard' && !empty($nim_search)) {
       <?php else: ?>
         <div class="table-responsive">
           <table class="table table-hover">
-            <thead class="table-light"><tr><th>No</th><th>NIM</th><th>Nama</th><th>Jenis SP</th><th>Tanggal</th><th>Alasan</th><th>Status</th><th>Aksi</th></tr></thead>
+            <thead class="table-light"><tr><th>No</th><th>nik</th><th>Nama</th><th>Jenis SP</th><th>Tanggal</th><th>Alasan</th><th>Status</th><th>Aksi</th></tr></thead>
             <tbody>
               <?php foreach ($sp_data as $index => $sp): 
                 $status_class = match($sp['status']) {
@@ -474,7 +474,7 @@ if ($action == 'dashboard' && !empty($nim_search)) {
               ?>
                 <tr>
                   <td><?= $index + 1 ?></td>
-                  <td><strong><?= htmlspecialchars($sp['nim']) ?></strong></td>
+                  <td><strong><?= htmlspecialchars($sp['nik']) ?></strong></td>
                   <td><?= htmlspecialchars($sp['nama_mahasiswa'] ?? 'Tidak diketahui') ?></td>
                   <td><span class="badge badge-sp<?= $sp['jenis_sp'] ?>">SP<?= $sp['jenis_sp'] ?></span></td>
                   <td><?= date('d/m/Y', strtotime($sp['tanggal'])) ?></td>
@@ -503,7 +503,7 @@ if ($action == 'dashboard' && !empty($nim_search)) {
           <form method="POST">
             <input type="hidden" name="tambah_sp" value="1">
             <div class="row mb-3">
-              <div class="col-md-6"><label class="form-label">NIM Mahasiswa *</label><input type="text" name="nim" class="form-control" required placeholder="Contoh: 20231001"></div>
+              <div class="col-md-6"><label class="form-label">nik Mahasiswa *</label><input type="text" name="nik" class="form-control" required placeholder="Contoh: 20231001"></div>
               <div class="col-md-6"><label class="form-label">Jenis SP *</label><select name="jenis_sp" class="form-select" required><option value="">Pilih Jenis SP</option><option value="1">SP 1 (Peringatan)</option><option value="2">SP 2 (Peringatan Keras)</option><option value="3">SP 3 (Skorsing)</option></select></div>
             </div>
             <div class="mb-3"><label class="form-label">Alasan Pelanggaran *</label><textarea name="alasan" class="form-control" rows="3" required placeholder="Jelaskan alasan penerbitan SP"></textarea></div>
@@ -522,12 +522,12 @@ if ($action == 'dashboard' && !empty($nim_search)) {
           <?php else: ?>
             <div class="table-responsive">
               <table class="table table-hover">
-                <thead class="table-light"><tr><th>No</th><th>NIM</th><th>Nama</th><th>Jenis SP</th><th>Status</th><th>Aksi</th></tr></thead>
+                <thead class="table-light"><tr><th>No</th><th>nik</th><th>Nama</th><th>Jenis SP</th><th>Status</th><th>Aksi</th></tr></thead>
                 <tbody>
                   <?php foreach ($sp_data as $index => $sp): ?>
                     <tr>
                       <td><?= $index + 1 ?></td>
-                      <td><?= htmlspecialchars($sp['nim']) ?></td>
+                      <td><?= htmlspecialchars($sp['nik']) ?></td>
                       <td><?= htmlspecialchars($sp['nama_mahasiswa'] ?? 'N/A') ?></td>
                       <td><span class="badge badge-sp<?= $sp['jenis_sp'] ?>">SP<?= $sp['jenis_sp'] ?></span></td>
                       <td><span class="badge <?= $sp['status'] == 'Aktif' ? 'badge-status-aktif' : 'badge-status-selesai' ?>"><?= $sp['status'] ?></span></td>
@@ -545,7 +545,7 @@ if ($action == 'dashboard' && !empty($nim_search)) {
                         <form method="POST">
                           <input type="hidden" name="id" value="<?= $sp['id'] ?>">
                           <input type="hidden" name="edit_sp" value="1">
-                          <div class="modal-header"><h5 class="modal-title">Edit SP - <?= $sp['nim'] ?></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                          <div class="modal-header"><h5 class="modal-title">Edit SP - <?= $sp['nik'] ?></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
                           <div class="modal-body">
                             <div class="mb-3">
                               <label class="form-label">Jenis SP</label>
