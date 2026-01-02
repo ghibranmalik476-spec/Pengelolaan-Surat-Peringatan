@@ -410,7 +410,7 @@ if ($action == 'dashboard' && !empty($nik_search)) {
               <div class="card-body">
                 <p>Format standar Surat Peringatan tingkat <?= $i ?></p>
                 <div class="d-flex justify-content-between">
-                  <a href="cetak_template.php?jenis=<?= $i ?>" class="btn btn-<?= $colors[$i] ?>" target="_blank"><i class="bi bi-eye me-2"></i>Lihat Format</a>
+                  <a href="cetak_template.php?jenis=<?= $i ?>" class="btn btn-<?= $colors[$i] ?>" target="_blank"><i class="bi bi-eye me-2"></i>Pengaturan Surat</a>
                   <a href="cetak_template.php?jenis=<?= $i ?>&download=1" class="btn btn-success"><i class="bi bi-download me-2"></i>Download</a>
                 </div>
               </div>
