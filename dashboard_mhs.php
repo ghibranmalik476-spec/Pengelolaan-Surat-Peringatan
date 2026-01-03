@@ -16,6 +16,82 @@ $q = mysqli_query($koneksi, "
     WHERE nik='$nik'
 ");
 $mhs = mysqli_fetch_assoc($q);
+
+// PROSES EKSPOR PDF
+if (isset($_GET['export_pdf'])) {
+    require_once('tcpdf/tcpdf.php'); // Pastikan library TCPDF sudah diinstall
+    
+    // Buat objek PDF baru
+    $pdf = new TCPDF('P', 'mm', 'A4', true, 'UTF-8', false);
+    
+    // Set dokumen meta
+    $pdf->SetCreator('Sistem SP Mahasiswa');
+    $pdf->SetAuthor('Politeknik');
+    $pdf->SetTitle('Riwayat Surat Peringatan - ' . $mhs['nama']);
+    $pdf->SetSubject('Riwayat SP');
+    
+    // Remove default header/footer
+    $pdf->setPrintHeader(false);
+    $pdf->setPrintFooter(false);
+    
+    // Add a page
+    $pdf->AddPage();
+    
+    // Set font
+    $pdf->SetFont('helvetica', 'B', 16);
+    
+    // Judul
+    $pdf->Cell(0, 10, 'RIWAYAT SURAT PERINGATAN', 0, 1, 'C');
+    $pdf->SetFont('helvetica', '', 12);
+    $pdf->Cell(0, 10, 'Mahasiswa: ' . $mhs['nama'], 0, 1, 'C');
+    $pdf->Cell(0, 10, 'NIK: ' . $nik . ' | Jurusan: ' . $mhs['jurusan'], 0, 1, 'C');
+    $pdf->Cell(0, 10, 'Tanggal Cetak: ' . date('d/m/Y H:i'), 0, 1, 'C');
+    $pdf->Ln(5);
+    
+    // Ambil data SP
+    $surat_peringatan = mysqli_query($koneksi, "
+        SELECT * FROM surat_peringatan
+        WHERE nik='$nik' 
+        ORDER BY tanggal DESC
+    ");
+    
+    if (mysqli_num_rows($surat_peringatan) == 0) {
+        $pdf->SetFont('helvetica', 'I', 12);
+        $pdf->Cell(0, 10, 'Tidak ada riwayat Surat Peringatan', 0, 1, 'C');
+    } else {
+        // Header tabel
+        $pdf->SetFont('helvetica', 'B', 10);
+        $header = array('No', 'Jenis SP', 'Alasan', 'Tanggal', 'Status', 'Keterangan');
+        $w = array(10, 15, 60, 25, 20, 40);
+        
+        for($i=0; $i<count($header); $i++) {
+            $pdf->Cell($w[$i], 7, $header[$i], 1, 0, 'C');
+        }
+        $pdf->Ln();
+        
+        // Data tabel
+        $pdf->SetFont('helvetica', '', 9);
+        $no = 1;
+        while($row = mysqli_fetch_assoc($surat_peringatan)) {
+            $pdf->Cell($w[0], 6, $no++, 1);
+            $pdf->Cell($w[1], 6, 'SP' . $row['jenis_sp'], 1);
+            $pdf->Cell($w[2], 6, substr($row['alasan'], 0, 50), 1);
+            $pdf->Cell($w[3], 6, date('d/m/Y', strtotime($row['tanggal'])), 1);
+            $pdf->Cell($w[4], 6, $row['status'], 1);
+            $pdf->Cell($w[5], 6, substr($row['keterangan'] ?? '-', 0, 30), 1);
+            $pdf->Ln();
+        }
+    }
+    
+    // Tambahkan catatan
+    $pdf->Ln(10);
+    $pdf->SetFont('helvetica', 'I', 10);
+    $pdf->MultiCell(0, 5, 'Catatan: Dokumen ini dicetak secara otomatis dari Sistem Surat Peringatan. Keaslian dokumen dapat diverifikasi melalui staff akademik.', 0, 'L');
+    
+    // Output PDF
+    $pdf->Output('Riwayat_SP_' . $nik . '_' . date('Ymd') . '.pdf', 'D');
+    exit;
+}
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -29,12 +105,10 @@ $mhs = mysqli_fetch_assoc($q);
 
 <style>
 body { background-color: #f8f9fa; }
-
 .content {
     padding: 20px;
     transition: margin-left 0.3s ease;
 }
-
 .profile-img {
     width: 120px;
     height: 120px;
@@ -42,6 +116,12 @@ body { background-color: #f8f9fa; }
     border-radius: 50%;
     border: 4px solid #0d6efd;
 }
+.table-responsive {
+    max-height: 400px;
+    overflow-y: auto;
+}
+.status-active { background-color: #ffc107; color: #000; padding: 3px 8px; border-radius: 4px; }
+.status-done { background-color: #198754; color: #fff; padding: 3px 8px; border-radius: 4px; }
 </style>
 </head>
 <body>
@@ -106,7 +186,7 @@ body { background-color: #f8f9fa; }
                 <div class="card-body">
                     <h6 class="text-muted">Data Mahasiswa</h6>
                     <hr>
-                    <p class="mb-1"><strong>NIM:</strong> <?= $nik ?></p>
+                    <p class="mb-1"><strong>NIK:</strong> <?= $nik ?></p>
                     <p class="mb-1"><strong>Nama:</strong> <?= $mhs['nama'] ?></p>
                     <p class="mb-0"><strong>Jurusan:</strong> <?= $mhs['jurusan'] ?></p>
                 </div>
@@ -117,7 +197,22 @@ body { background-color: #f8f9fa; }
         <div class="col-md-8">
             <div class="card shadow-sm">
                 <div class="card-body">
-                    <h6 class="text-muted">Riwayat Surat Peringatan</h6>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="text-muted mb-0">Riwayat Surat Peringatan</h6>
+                        <?php
+                        // Cek apakah ada riwayat SP
+                        $cek_sp = mysqli_query($koneksi, "
+                            SELECT COUNT(*) as total FROM surat_peringatan
+                            WHERE nik='$nik'
+                        ");
+                        $total_sp = mysqli_fetch_assoc($cek_sp)['total'];
+                        
+                        if ($total_sp > 0): ?>
+                        <a href="?export_pdf=1" class="btn btn-danger btn-sm">
+                            <i class="bi bi-file-earmark-pdf me-1"></i> Export PDF
+                        </a>
+                        <?php endif; ?>
+                    </div>
                     <hr>
 
                     <?php
@@ -130,27 +225,56 @@ body { background-color: #f8f9fa; }
                     if (mysqli_num_rows($surat_peringatan) == 0):
                     ?>
                         <div class="alert alert-success mb-0">
-                            🎉 Anda belum memiliki Surat Peringatan
+                            <i class="bi bi-check-circle me-2"></i> Anda belum memiliki Surat Peringatan
                         </div>
                     <?php else: ?>
-                        <table class="table table-sm table-bordered text-center">
-                            <thead class="table-dark">
-                                <tr>
-                                    <th>Jenis SP</th>
-                                    <th>Keterangan</th>
-                                    <th>Tanggal</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                            <?php while($r = mysqli_fetch_assoc($surat_peringatan)): ?>
-                                <tr>
-                                    <td><?= $r['jenis_sp'] ?></td>
-                                    <td><?= $r['keterangan'] ?></td>
-                                    <td><?= date('d-m-Y', strtotime($r['tanggal'])) ?></td>
-                                </tr>
-                            <?php endwhile; ?>
-                            </tbody>
-                        </table>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered">
+                                <thead class="table-dark">
+                                    <tr class="text-center">
+                                        <th>No</th>
+                                        <th>Jenis SP</th>
+                                        <th>Alasan</th>
+                                        <th>Tanggal</th>
+                                        <th>Status</th>
+                                        <th>Keterangan</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                <?php 
+                                $no = 1;
+                                while($r = mysqli_fetch_assoc($surat_peringatan)): 
+                                ?>
+                                    <tr>
+                                        <td class="text-center"><?= $no++ ?></td>
+                                        <td class="text-center">
+                                            <span class="badge bg-<?= 
+                                                $r['jenis_sp'] == 1 ? 'warning text-dark' : 
+                                                ($r['jenis_sp'] == 2 ? 'danger' : 'dark')
+                                            ?>">
+                                                SP<?= $r['jenis_sp'] ?>
+                                            </span>
+                                        </td>
+                                        <td><?= htmlspecialchars($r['alasan']) ?></td>
+                                        <td class="text-center"><?= date('d-m-Y', strtotime($r['tanggal'])) ?></td>
+                                        <td class="text-center">
+                                            <span class="status-<?= strtolower($r['status']) ?>">
+                                                <?= $r['status'] ?>
+                                            </span>
+                                        </td>
+                                        <td><?= htmlspecialchars($r['keterangan'] ?? '-') ?></td>
+                                    </tr>
+                                <?php endwhile; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- INFO PDF -->
+                        <div class="alert alert-info mt-3">
+                            <i class="bi bi-info-circle me-2"></i>
+                            Anda dapat mengekspor riwayat SP ini ke format PDF dengan mengklik tombol <strong>"Export PDF"</strong> di atas.
+                            Dokumen PDF dapat digunakan untuk keperluan administrasi atau arsip pribadi.
+                        </div>
                     <?php endif; ?>
 
                 </div>

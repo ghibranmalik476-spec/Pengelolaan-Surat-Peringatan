@@ -516,7 +516,7 @@ if ($download) {
             <button onclick="clearAllFields()" class="btn btn-clear">🗑️ Kosongkan</button>
             <a href="javascript:void(0)" onclick="preparePrint()" class="btn btn-print">🖨️ Cetak</a>
             <a href="cetak_template_kosong.php?jenis=<?= $jenis ?>&download=1" class="btn btn-download">📥 Download PDF</a>
-            <a href="index.php?action=rekap&pdf_action=template" class="btn btn-back">↩ Kembali</a>
+            <a href="dashboard_staff.php?action=dashboard" class="btn btn-back">↩ Kembali</a>
         </div>
         <?php endif; ?>
     </div>
