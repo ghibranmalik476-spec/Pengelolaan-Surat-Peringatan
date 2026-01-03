@@ -24,18 +24,22 @@ if ($download) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Template SP<?= $jenis ?> - Kosong (1 Lembar)</title>
     <style>
         @page {
             margin: 1.5cm;
+            /* Hilangkan header dan footer browser default */
+            size: A4;
+            margin: 2cm;
         }
         
         body {
             font-family: 'Times New Roman', Times, serif;
             font-size: 11pt;
-            line-height: 1.4;
+            line-height: 1.0;
             margin: 0;
             padding: 0;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
         }
         
         .container {
@@ -43,46 +47,103 @@ if ($download) {
             max-width: 18cm;
             margin: 0 auto;
             min-height: 26cm;
+            position: relative;
         }
         
-        .header {
-            text-align: center;
-            margin-bottom: 15px;
-        }
-        
+        /* GARIS PEMBATAS HEADER */
         .kop-surat {
+            text-align: center;
             border-bottom: 2px solid #000;
             padding-bottom: 5px;
-            margin-bottom: 15px;
+            margin-bottom: 5px;
+            position: relative;
+            min-height: 120px; /* Tinggi minimum untuk logo dan teks */
+        }
+        
+        /* TEMPAT & TANGGAL di pojok kanan atas - DI LUAR KOP SURAT */
+        .tempat-tanggal {
+            position: absolute;
+            top: 130px; /* Posisi di bawah garis header */
+            right: 0;
+            text-align: right;
+            font-size: 11pt;
+            line-height: 1.0;
+        }
+        
+        /* Style untuk logo - DITURUNKAN sedikit */
+        .logo-container {
+            position: absolute;
+            top: 30px; /* DITURUNKAN dari 0 ke 10px */
+            left: 0;
+            width: 100px;
+            height: auto;
         }
         
         .logo {
-            width: 80px;
+            max-width: 80px;
             height: auto;
-            margin-bottom: 5px;
+        }
+        
+        .header-content {
+            margin-left: 100px; /* Ruang untuk logo */
+            text-align: center;
+            width: calc(100% - 100px);
+        }
+        
+        .kop-atas {
+            font-size: 14pt;
+            font-weight: bold;
+            line-height: 1.0;
+            margin: 0;
+            text-transform: uppercase;
+            padding: 0;
+        }
+        
+        .kop-politeknik {
+            font-size: 16pt;
+            font-weight: bold;
+            margin: 2px 0 0 0; /* DIPERKECIL */
+            letter-spacing: 0.5px;
+            line-height: 1.0;
+        }
+        
+        /* ALAMAT dan KONTAK DI RAPATKAN KE TENGAH */
+        .alamat-kontak {
+            font-size: 9pt;
+            margin: 2px 0 0 0; /* DIPERKECIL */
+            line-height: 1.1;
+            text-align: center;
+        }
+        
+        .kontak-line {
+            margin: 1px 0; /* SANGAT RAPAT */
+            line-height: 1.0;
         }
         
         .nomor-surat {
             text-align: center;
-            margin: 10px 0;
+            margin: 20px 0 5px 0; /* DIPERKECIL */
             font-size: 11pt;
+            line-height: 1.0;
         }
         
         .content {
             text-align: justify;
-            margin-top: 15px;
+            margin-top: 10px;
+            line-height: 1.1;
         }
         
         .identitas table {
             width: 100%;
             border-collapse: collapse;
-            margin: 10px 0;
+            margin: 8px 0;
         }
         
         .identitas td {
             vertical-align: top;
-            padding: 3px 0;
+            padding: 2px 0;
             font-size: 11pt;
+            line-height: 1.1;
         }
         
         .identitas td:first-child {
@@ -90,19 +151,21 @@ if ($download) {
         }
         
         .paragraf {
-            margin: 10px 0;
+            margin: 8px 0;
             text-indent: 40px;
+            line-height: 1.1;
         }
         
         .ttd {
-            text-align: right;
-            margin-top: 40px;
+            text-align: center;
+            margin-top: 30px;
+            line-height: 1.1;
         }
         
         .ttd-nama {
             font-weight: bold;
             text-decoration: underline;
-            margin-top: 40px;
+            margin-top: 30px;
         }
         
         .bold {
@@ -121,23 +184,18 @@ if ($download) {
             text-align: right;
         }
         
-        /* Untuk form fillable */
+        /* FIELD INPUT - TANPA GARIS */
         .form-field {
             border: none;
-            border-bottom: 1px dotted #666;
             background: transparent;
             padding: 1px 3px;
-            margin: 0 3px;
+            margin: 0 1px;
             min-width: 150px;
             font-family: 'Times New Roman', Times, serif;
             font-size: 11pt;
             display: inline-block;
-        }
-        
-        .form-field:focus {
+            line-height: 1.0;
             outline: none;
-            border-bottom: 1px solid #007bff;
-            background-color: #f0f8ff;
         }
         
         .form-field-small {
@@ -152,55 +210,80 @@ if ($download) {
             min-width: 200px;
         }
         
+        /* TEXTAREA - TANPA GARIS */
         .form-textarea {
             width: 100%;
-            height: 60px;
-            border: 1px dotted #666;
-            padding: 3px;
+            min-height: 40px;
+            border: none;
+            padding: 2px 0;
             font-family: 'Times New Roman', Times, serif;
             font-size: 11pt;
             background: transparent;
-            margin-top: 5px;
-        }
-        
-        .form-textarea:focus {
+            margin-top: 3px;
+            line-height: 1.1;
+            resize: vertical;
             outline: none;
-            border: 1px solid #007bff;
-            background-color: #f0f8ff;
         }
         
         .instruction {
             color: #666;
-            font-size: 9pt;
+            font-size: 8pt;
             font-style: italic;
-            margin-top: 2px;
+            margin-top: 1px;
         }
         
-        /* Untuk print */
+        /* Untuk print - HILANGKAN SEMUA HEADER/FOOTER BROWSER */
         @media print {
+            @page {
+                margin: 1.5cm;
+                size: A4;
+            }
+            
             body {
                 font-size: 11pt;
+                line-height: 1.0;
+                margin: 0;
+                padding: 0;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            
+            /* Hilangkan semua header/footer browser */
+            @page {
+                margin: 1.5cm;
+                marks: none;
+                size: A4;
+            }
+            
+            @page :first {
+                margin: 1.5cm;
+                marks: none;
+            }
+            
+            @page :left {
+                margin: 1.5cm;
+            }
+            
+            @page :right {
+                margin: 1.5cm;
             }
             
             .no-print {
                 display: none !important;
             }
             
-            .form-field {
-                border-bottom: 1px solid #000;
-            }
-            
-            .form-textarea {
-                border: 1px solid #000;
-            }
-            
-            .instruction {
-                display: none;
-            }
-            
             .container {
                 max-width: 100%;
                 min-height: auto;
+                margin: 0;
+                padding: 0;
+            }
+            
+            /* Hilangkan "Template SP1 (1 Lembar)" saat print */
+            .form-instruction,
+            .action-buttons,
+            .no-print {
+                display: none !important;
             }
         }
         
@@ -258,13 +341,6 @@ if ($download) {
             font-size: 12px;
         }
         
-        .tembusan {
-            margin-top: 15px;
-            font-size: 10pt;
-            border-top: 1px dashed #ccc;
-            padding-top: 5px;
-        }
-        
         /* Compact layout */
         .compact-list {
             margin: 5px 0 5px 20px;
@@ -272,63 +348,80 @@ if ($download) {
         }
         
         .compact-list li {
-            margin-bottom: 3px;
+            margin-bottom: 2px;
             font-size: 11pt;
+            line-height: 1.1;
         }
         
-        /* Make it fit in one page */
-        .page-break {
-            page-break-inside: avoid;
+        /* Spasi untuk kontak yang lebih rapat */
+        .kontak-line span {
+            margin: 0 3px;
+        }
+        
+        /* Highlight saat input aktif */
+        .form-field:focus,
+        .form-textarea:focus {
+            background-color: #f0f8ff;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <?php if (!$download && !$print): ?>
-        <div class="action-buttons no-print">
-            <button onclick="fillAllFields()" class="btn btn-fill">📝 Isi Contoh</button>
-            <button onclick="clearAllFields()" class="btn btn-clear">🗑️ Kosongkan</button>
-            <a href="javascript:window.print()" class="btn btn-print">🖨️ Cetak</a>
-            <a href="cetak_template_kosong.php?jenis=<?= $jenis ?>&download=1" class="btn btn-download">📥 Download PDF</a>
-            <a href="index.php?action=rekap&pdf_action=template" class="btn btn-back">↩ Kembali</a>
-        </div>
         
-        <div class="form-instruction no-print">
-            <strong><i class="bi bi-info-circle"></i> Template SP<?= $jenis ?> (1 Lembar)</strong><br>
-            Isi semua field yang ditandai garis bawah, lalu cetak atau download sebagai PDF.
-        </div>
         <?php endif; ?>
         
         <!-- KOP SURAT -->
         <div class="kop-surat">
-            <div class="header">
-                <div style="display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 5px;">
-                    <div>
-                        <img src="poltek.png" alt="Logo" class="logo">
+            <div class="logo-container">
+                <!-- Logo Politeknik Negeri Batam -->
+                <img src="poltek.png" alt="Logo Politeknik Negeri Batam" class="logo">
+                <!-- Jika file logo tidak ada, buat placeholder -->
+                <?php if (!file_exists('poltek.png')): ?>
+                <div style="width: 80px; height: 80px; border: 1px solid #ccc; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #666;">
+                    LOGO<br>POLIBATAM
+                </div>
+                <?php endif; ?>
+            </div>
+            
+            <div class="header-content">
+                <div class="kop-atas">KEMENTERIAN PENDIDIKAN DAN KEBUDAYAAN<br>RISET, DAN TEKNOLOGI</div>
+                <div class="kop-politeknik">POLITEKNIK NEGERI BATAM</div>
+                
+                <!-- ALAMAT dan KONTAK DI RAPATKAN -->
+                <div class="alamat-kontak">
+                    <div class="kontak-line">
+                        <input type="text" class="form-field form-field-large" id="alamat" placeholder="Jl. Ahmad Yani, Batam Center, Kecamatan Batam Kota, Batam 29461" value="Jl. Ahmad Yani, Batam Center, Kecamatan Batam Kota, Batam 29461" style="font-size: 9pt; min-width: 350px; text-align: center; padding: 0; margin: 0;">
                     </div>
-                    <div>
-                        <h4 style="margin: 0; font-size: 14pt;">POLITEKNIK NEGERI</h4>
-                        <h3 style="margin: 0; font-size: 16pt;">
-                            <input type="text" class="form-field form-field-large center" id="institusi" placeholder="Nama Universitas" value="" style="font-size: 16pt; font-weight: bold;">
-                        </h3>
+                    <div class="kontak-line">
+                        Telepon: 
+                        <input type="text" class="form-field form-field-small" id="telepon" placeholder="+62 778 469856 - 469860" value="+62 778 469856 - 469860" style="font-size: 9pt; padding: 0; margin: 0 3px;">
+                        Faksimile: 
+                        <input type="text" class="form-field form-field-small" id="faksimile" placeholder="+62 778 463620" value="+62 778 463620" style="font-size: 9pt; padding: 0; margin: 0 3px;">
+                    </div>
+                    <div class="kontak-line">
+                        Laman: 
+                        <input type="text" class="form-field form-field-medium" id="website" placeholder="www.polibatam.ac.id" value="www.polibatam.ac.id" style="font-size: 9pt; padding: 0; margin: 0 3px;">
+                        Surel: 
+                        <input type="text" class="form-field form-field-medium" id="email" placeholder="info@polibatam.ac.id" value="info@polibatam.ac.id" style="font-size: 9pt; padding: 0; margin: 0 3px;">
                     </div>
                 </div>
-                <p style="margin: 3px 0; font-size: 10pt;">
-                    <input type="text" class="form-field form-field-large" id="alamat" placeholder="Alamat Lengkap" value="" style="font-size: 10pt; min-width: 300px;">
-                </p>
-                <p style="margin: 3px 0; font-size: 10pt;">
-                    Telp: <input type="text" class="form-field form-field-small" id="telepon" placeholder="(021) ..." value="" style="font-size: 10pt;">
-                    | Email: <input type="text" class="form-field form-field-medium" id="email" placeholder="email@ac.id" value="" style="font-size: 10pt;">
-                </p>
             </div>
+        </div>
+        
+        <!-- TEMPAT & TANGGAL di pojok kanan atas - DI LUAR KOP SURAT -->
+        <div class="tempat-tanggal">
+            <input type="text" class="form-field form-field-small" id="tempat" placeholder="Batam" value="Batam" style="text-align: right; font-size: 11pt; padding: 0; margin: 0;">
+            , 
+            <input type="text" class="form-field form-field-medium" id="tanggal_surat" placeholder="<?= date('d F Y') ?>" value="<?= date('d F Y') ?>" style="text-align: right; font-size: 11pt; padding: 0; margin: 0;">
         </div>
         
         <!-- NOMOR SURAT -->
         <div class="nomor-surat">
-            <p><strong>Nomor</strong> : 
-                <input type="text" class="form-field form-field-medium" id="nomor_surat" placeholder="XXX/SP<?= $jenis ?>/AK/<?= date('Y') ?>" value="">
+            <p style="margin: 2px 0;"><strong>Nomor</strong> : 
+                <input type="text" class="form-field form-field-medium" id="nomor_surat" placeholder="XXX/SP<?= $jenis ?>/AK/<?= date('Y') ?>" value="" style="padding: 0; margin: 0;">
             </p>
-            <p><strong>Perihal</strong> : <span class="bold">SURAT PERINGATAN (SP<?= $jenis ?>)</span></p>
+            <p style="margin: 2px 0;"><strong>Perihal</strong> : <span class="bold">SURAT PERINGATAN (SP<?= $jenis ?>)</span></p>
         </div>
         
         <!-- ISI SURAT -->
@@ -383,9 +476,8 @@ if ($download) {
                 <strong>Telah melakukan pelanggaran sebagai berikut:</strong>
             </div>
             
-            <div style="margin: 8px 0; padding: 5px; border: 1px dotted #666; border-radius: 3px;">
-                <textarea class="form-textarea" id="alasan" placeholder="Jelaskan jenis pelanggaran secara singkat dan jelas..."></textarea>
-                <div class="instruction">Contoh: Tidak hadir kuliah 3x berturut-turut tanpa keterangan</div>
+            <div>
+                <textarea class="form-textarea" id="alasan" placeholder="Jelaskan jenis pelanggaran secara singkat dan jelas..." style="width: 100%; min-height: 40px; padding: 0;"></textarea>
             </div>
             
             <div class="paragraf">
@@ -407,45 +499,22 @@ if ($download) {
             <div class="paragraf">
                 Demikian surat peringatan ini dibuat untuk dapat dipergunakan sebagaimana mestinya.
             </div>
-        </div>
-        
-        <!-- TANDA TANGAN DAN TEMBUSAN DALAM SATU BARIS -->
-        <div style="display: flex; justify-content: space-between; margin-top: 30px;">
-            <!-- Tembusan -->
-            <div class="tembusan" style="flex: 1; margin-right: 20px;">
-                <strong>Tembusan:</strong>
-                <ol class="compact-list">
-                    <li>Arsip</li>
-                    <li>Mahasiswa ybs.</li>
-                    <li>Wali Dosen</li>
-                    <li>Buku Kasus</li>
-                </ol>
-            </div>
             
             <!-- Tanda Tangan -->
-            <div class="ttd" style="flex: 1; text-align: center;">
-                <div style="margin-bottom: 40px;">
-                    <input type="text" class="form-field form-field-medium" id="kota" placeholder="Kota" value="" style="text-align: center;">
-                    , 
-                    <input type="text" class="form-field form-field-medium" id="tanggal" placeholder="<?= date('d/m/Y') ?>" value="<?= date('d/m/Y') ?>" style="text-align: center;">
-                </div>
+            <div class="ttd">
+                <div id="display_jabatan" style="font-weight: bold; margin-bottom: 40px;"></div>
                 
-                <div id="display_jabatan" style="font-weight: bold; margin-bottom: 50px;"></div>
-                
-                <div class="ttd-nama" id="display_nama" style="margin-bottom: 5px;"></div>
+                <div class="ttd-nama" id="display_nama" style="margin-bottom: 3px;"></div>
                 <div style="font-size: 10pt;">NIP. <span id="display_nip"></span></div>
             </div>
         </div>
         
         <?php if (!$download && !$print): ?>
-        <div style="margin-top: 20px; padding: 8px; background: #f8f9fa; border-radius: 3px; font-size: 10pt; text-align: center;" class="no-print">
-            <strong>Template SP<?= $jenis ?> - 1 Lembar</strong> | Isi semua field lalu cetak
-        </div>
         
         <div class="action-buttons no-print" style="margin-top: 15px;">
             <button onclick="fillAllFields()" class="btn btn-fill">📝 Isi Contoh</button>
             <button onclick="clearAllFields()" class="btn btn-clear">🗑️ Kosongkan</button>
-            <a href="javascript:window.print()" class="btn btn-print">🖨️ Cetak</a>
+            <a href="javascript:void(0)" onclick="preparePrint()" class="btn btn-print">🖨️ Cetak</a>
             <a href="cetak_template_kosong.php?jenis=<?= $jenis ?>&download=1" class="btn btn-download">📥 Download PDF</a>
             <a href="index.php?action=rekap&pdf_action=template" class="btn btn-back">↩ Kembali</a>
         </div>
@@ -455,11 +524,14 @@ if ($download) {
     <script>
         // Data contoh untuk 1 lembar
         const contohData = {
-            institusi: 'UNIVERSITAS CONTOH',
-            alamat: 'Jl. Pendidikan No. 123, Kota Contoh',
-            telepon: '(021) 123456',
-            email: 'info@contoh.ac.id',
+            alamat: 'Jl. Ahmad Yani, Batam Center, Kecamatan Batam Kota, Batam 29461',
+            telepon: '+62 778 469856 - 469860',
+            faksimile: '+62 778 463620',
+            website: 'www.polibatam.ac.id',
+            email: 'info@polibatam.ac.id',
             nomor_surat: '001/SP<?= $jenis ?>/AK/<?= date("Y") ?>',
+            tempat: 'Batam',
+            tanggal_surat: '<?= date("d F Y") ?>',
             ttd_nama: 'Dr. SUTARJO, M.Kom.',
             ttd_jabatan: 'Ketua Jurusan',
             nip: '196512101992031001',
@@ -468,9 +540,7 @@ if ($download) {
             jurusan: 'TEKNIK INFORMATIKA',
             semester: 'IV',
             alasan: 'Tidak hadir dalam perkuliahan lebih dari 3 kali berturut-turut tanpa keterangan.',
-            dasar: 'Pasal 5 ayat 2 Peraturan Akademik',
-            kota: 'Kota Contoh',
-            tanggal: '<?= date("d/m/Y") ?>'
+            dasar: 'Pasal 5 ayat 2 Peraturan Akademik'
         };
 
         // Fungsi untuk mengisi semua field dengan contoh
@@ -488,8 +558,13 @@ if ($download) {
         function clearAllFields() {
             const inputs = document.querySelectorAll('input, textarea');
             inputs.forEach(input => {
-                input.value = '';
+                // Jangan kosongkan data header yang fixed
+                if (!['alamat', 'telepon', 'faksimile', 'website', 'email', 'tempat'].includes(input.id)) {
+                    input.value = '';
+                }
             });
+            // Kosongkan tanggal surat tapi set ke default
+            document.getElementById('tanggal_surat').value = '<?= date("d F Y") ?>';
             updateDisplay();
         }
 
@@ -504,6 +579,13 @@ if ($download) {
             document.getElementById('display_nip').textContent = nip;
         }
 
+        // Fungsi untuk mempersiapkan print (hilangkan elemen yang tidak perlu)
+        function preparePrint() {
+            
+            // Print
+            window.print();
+        }
+
         // Auto update display ketika field diubah
         document.addEventListener('DOMContentLoaded', function() {
             const fieldsToWatch = ['ttd_nama', 'ttd_jabatan', 'nip'];
@@ -514,22 +596,28 @@ if ($download) {
                 }
             });
             
-            // Set title
-            document.title = "Template SP<?= $jenis ?> (1 Lembar)";
-            
             // Auto print jika parameter print=1
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.has('print')) {
                 setTimeout(() => {
-                    window.print();
+                    preparePrint();
                 }, 500);
             }
+            
+            // Set data default untuk header
+            document.getElementById('alamat').value = 'Jl. Ahmad Yani, Batam Center, Kecamatan Batam Kota, Batam 29461';
+            document.getElementById('telepon').value = '+62 778 469856 - 469860';
+            document.getElementById('faksimile').value = '+62 778 463620';
+            document.getElementById('website').value = 'www.polibatam.ac.id';
+            document.getElementById('email').value = 'info@polibatam.ac.id';
+            document.getElementById('tempat').value = 'Batam';
+            document.getElementById('tanggal_surat').value = '<?= date("d F Y") ?>';
             
             // Initial update
             updateDisplay();
             
-            // Auto focus ke field pertama
-            const firstField = document.getElementById('institusi');
+            // Auto focus ke field pertama yang dapat diisi
+            const firstField = document.getElementById('nomor_surat');
             if (firstField && !window.location.search.includes('print')) {
                 firstField.focus();
             }
@@ -550,7 +638,7 @@ if ($download) {
             // Ctrl + P = Print
             if (e.ctrlKey && e.key === 'p') {
                 e.preventDefault();
-                window.print();
+                preparePrint();
             }
         });
     </script>

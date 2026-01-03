@@ -18,15 +18,111 @@ $message = $_GET['message'] ?? '';
 $search = $_GET['search'] ?? '';
 $pdf_action = $_GET['pdf_action'] ?? '';
 $nik_search = $_GET['nik_search'] ?? '';
+$tab = $_GET['tab'] ?? 'data';
 
-// FUNGSI UTAMA
-function getSPData($koneksi, $search = '') {
-    $query = "SELECT sp.*, m.nama as nama_mahasiswa, m.jurusan, m.email FROM surat_peringatan sp LEFT JOIN mahasiswa m ON sp.nik = m.nik WHERE 1=1";
-    if (!empty($search)) $query .= " AND (sp.nik LIKE '%$search%' OR m.nama LIKE '%$search%')";
-    $query .= " ORDER BY sp.tanggal DESC, sp.id DESC";
+// FUNGSI KEhadiran BARU - SEMUA DATA DISIMPAN
+function getRingkasanKehadiran($koneksi, $nik) {
+    $nik = mysqli_real_escape_string($koneksi, $nik);
+    $query = "SELECT 
+                COUNT(CASE WHEN status = 'hadir' THEN 1 END) as hadir,
+                COUNT(CASE WHEN status = 'sakit' THEN 1 END) as sakit,
+                COUNT(CASE WHEN status = 'izin' THEN 1 END) as izin,
+                COUNT(CASE WHEN status = 'tanpa_keterangan' THEN 1 END) as tanpa_keterangan,
+                COUNT(*) as total
+              FROM kehadiran 
+              WHERE nik = '$nik'";
+    
+    $result = mysqli_query($koneksi, $query);
+    
+    if ($result && mysqli_num_rows($result) > 0) {
+        $data = mysqli_fetch_assoc($result);
+        
+        // Hitung persentase kehadiran
+        $total = $data['total'];
+        $hadir = $data['hadir'];
+        $persentase = $total > 0 ? round(($hadir / $total) * 100, 1) : 0;
+        
+        return [
+            'persentase' => $persentase,
+            'hadir' => $hadir,
+            'sakit' => $data['sakit'],
+            'izin' => $data['izin'],
+            'tanpa_keterangan' => $data['tanpa_keterangan'],
+            'total' => $total
+        ];
+    }
+    
+    return [
+        'persentase' => 0,
+        'hadir' => 0,
+        'sakit' => 0,
+        'izin' => 0,
+        'tanpa_keterangan' => 0,
+        'total' => 0
+    ];
+}
+
+function getRiwayatKehadiran($koneksi, $nik, $limit = 50) {
+    $nik = mysqli_real_escape_string($koneksi, $nik);
+    $query = "SELECT * FROM kehadiran 
+              WHERE nik = '$nik' 
+              ORDER BY tanggal DESC, id DESC 
+              LIMIT $limit";
+    
     $result = mysqli_query($koneksi, $query);
     $data = [];
-    if ($result) while ($row = mysqli_fetch_assoc($result)) $data[] = $row;
+    
+    if ($result) {
+        while ($row = mysqli_fetch_assoc($result)) {
+            $data[] = $row;
+        }
+    }
+    
+    return $data;
+}
+
+function simpanKehadiran($koneksi, $postData) {
+    $nik = mysqli_real_escape_string($koneksi, $postData['nik']);
+    $tanggal = mysqli_real_escape_string($koneksi, $postData['tanggal']);
+    $status = mysqli_real_escape_string($koneksi, $postData['status']);
+    $keterangan = mysqli_real_escape_string($koneksi, $postData['keterangan'] ?? '');
+    
+    // Validasi input
+    if (empty($nik) || empty($tanggal) || empty($status)) {
+        return false;
+    }
+    
+    // SELALU INSERT DATA BARU (tanpa cek duplikat)
+    $query = "INSERT INTO kehadiran (nik, tanggal, status, keterangan) 
+              VALUES ('$nik', '$tanggal', '$status', '$keterangan')";
+    
+    return mysqli_query($koneksi, $query);
+}
+
+function hapusKehadiran($koneksi, $id) {
+    $id = mysqli_real_escape_string($koneksi, $id);
+    $query = "DELETE FROM kehadiran WHERE id = '$id'";
+    return mysqli_query($koneksi, $query);
+}
+
+// FUNGSI UTAMA YANG SUDAH ADA
+function getSPData($koneksi, $search = '') {
+    $query = "SELECT sp.*, m.nama as nama_mahasiswa, m.jurusan, m.email FROM surat_peringatan sp LEFT JOIN mahasiswa m ON sp.nik = m.nik WHERE 1=1";
+    if (!empty($search)) {
+        $search = mysqli_real_escape_string($koneksi, $search);
+        $query .= " AND (sp.nik LIKE '%$search%' OR m.nama LIKE '%$search%')";
+    }
+    $query .= " ORDER BY sp.tanggal DESC, sp.id DESC";
+    
+    $result = mysqli_query($koneksi, $query);
+    $data = [];
+    
+    if ($result) {
+        while ($row = mysqli_fetch_assoc($result)) {
+            $data[] = $row;
+        }
+    }
+    
     return $data;
 }
 
@@ -34,13 +130,22 @@ function getMahasiswaData($koneksi) {
     $query = "SELECT * FROM mahasiswa ORDER BY nama ASC";
     $result = mysqli_query($koneksi, $query);
     $data = [];
-    if ($result) while ($row = mysqli_fetch_assoc($result)) $data[] = $row;
+    
+    if ($result) {
+        while ($row = mysqli_fetch_assoc($result)) {
+            $data[] = $row;
+        }
+    }
+    
     return $data;
 }
 
 function getSPDetail($koneksi, $id) {
+    $id = mysqli_real_escape_string($koneksi, $id);
     $query = "SELECT sp.*, m.nama as nama_mahasiswa, m.email, m.jurusan, m.alamat FROM surat_peringatan sp LEFT JOIN mahasiswa m ON sp.nik = m.nik WHERE sp.id = '$id'";
+    
     $result = mysqli_query($koneksi, $query);
+    
     return ($result && mysqli_num_rows($result) > 0) ? mysqli_fetch_assoc($result) : null;
 }
 
@@ -52,12 +157,15 @@ function getDashboardStats($koneksi) {
         'sp_aktif' => "SELECT COUNT(*) as aktif FROM surat_peringatan WHERE status = 'Aktif'",
         'sp_hari_ini' => "SELECT COUNT(*) as hari_ini FROM surat_peringatan WHERE DATE(tanggal) = '" . date('Y-m-d') . "'"
     ];
+    
     foreach ($queries as $key => $sql) {
         $result = mysqli_query($koneksi, $sql);
         $stats[$key] = $result ? mysqli_fetch_assoc($result)[$key == 'sp_aktif' ? 'aktif' : ($key == 'sp_hari_ini' ? 'hari_ini' : 'total')] : 0;
     }
+    
     $jurusan_query = "SELECT m.jurusan, COUNT(sp.id) as jumlah FROM surat_peringatan sp LEFT JOIN mahasiswa m ON sp.nik = m.nik WHERE m.jurusan != '' GROUP BY m.jurusan ORDER BY jumlah DESC LIMIT 1";
     $jurusan_result = mysqli_query($koneksi, $jurusan_query);
+    
     if ($jurusan_result && mysqli_num_rows($jurusan_result) > 0) {
         $row = mysqli_fetch_assoc($jurusan_result);
         $stats['jurusan_terbanyak'] = $row['jurusan'] ?: 'Belum ada data';
@@ -66,20 +174,31 @@ function getDashboardStats($koneksi) {
         $stats['jurusan_terbanyak'] = 'Belum ada data';
         $stats['jurusan_terbanyak_jumlah'] = 0;
     }
+    
     return $stats;
 }
 
 function getSPTerbaru($koneksi) {
     $query = "SELECT sp.*, m.nama as nama_mahasiswa FROM surat_peringatan sp LEFT JOIN mahasiswa m ON sp.nik = m.nik ORDER BY sp.tanggal DESC, sp.id DESC LIMIT 5";
+    
     $result = mysqli_query($koneksi, $query);
     $data = [];
-    if ($result) while ($row = mysqli_fetch_assoc($result)) $data[] = $row;
+    
+    if ($result) {
+        while ($row = mysqli_fetch_assoc($result)) {
+            $data[] = $row;
+        }
+    }
+    
     return $data;
 }
 
 function getMahasiswaDetail($koneksi, $nik) {
+    $nik = mysqli_real_escape_string($koneksi, $nik);
     $query = "SELECT * FROM mahasiswa WHERE nik = '$nik'";
+    
     $result = mysqli_query($koneksi, $query);
+    
     return ($result && mysqli_num_rows($result) > 0) ? mysqli_fetch_assoc($result) : null;
 }
 
@@ -95,6 +214,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         
         // Cek mahasiswa
         $cek_mahasiswa = mysqli_query($koneksi, "SELECT * FROM mahasiswa WHERE nik = '$nik'");
+        
         if (mysqli_num_rows($cek_mahasiswa) == 0) {
             $nama = mysqli_real_escape_string($koneksi, $_POST['nama_mahasiswa'] ?? 'Mahasiswa Baru');
             $jurusan = mysqli_real_escape_string($koneksi, $_POST['jurusan'] ?? 'Belum diisi');
@@ -102,6 +222,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
         
         $query = "INSERT INTO surat_peringatan (nik, jenis_sp, tanggal, alasan, status, keterangan) VALUES ('$nik', '$jenis_sp', '$tanggal', '$alasan', '$status', '$keterangan')";
+        
         if (mysqli_query($koneksi, $query)) {
             header("Location: ?action=rekap&message=" . urlencode("SP berhasil ditambahkan untuk nik $nik"));
             exit;
@@ -118,6 +239,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $keterangan = mysqli_real_escape_string($koneksi, $_POST['keterangan'] ?? '');
         
         $query = "UPDATE surat_peringatan SET jenis_sp = '$jenis_sp', alasan = '$alasan', status = '$status', keterangan = '$keterangan' WHERE id = '$id'";
+        
         if (mysqli_query($koneksi, $query)) {
             header("Location: ?action=kelola&message=" . urlencode("Data SP berhasil diperbarui"));
             exit;
@@ -125,11 +247,35 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $message = "Gagal mengupdate data: " . mysqli_error($koneksi);
         }
     }
+    
+    // PROSES SIMPAN KEhadiran - SELALU INSERT BARU
+    if (isset($_POST['simpan_kehadiran'])) {
+        if (simpanKehadiran($koneksi, $_POST)) {
+            header("Location: ?action=dashboard&nik_search=" . $_POST['nik'] . "&tab=kehadiran&message=" . urlencode("Data kehadiran berhasil disimpan"));
+            exit;
+        } else {
+            $message = "Gagal menyimpan data kehadiran: " . mysqli_error($koneksi);
+        }
+    }
+    
+    // PROSES HAPUS KEhadiran
+    if (isset($_POST['hapus_kehadiran'])) {
+        $id_hapus = mysqli_real_escape_string($koneksi, $_POST['id_hapus']);
+        $nik_hapus = mysqli_real_escape_string($koneksi, $_POST['nik_hapus']);
+        
+        if (hapusKehadiran($koneksi, $id_hapus)) {
+            header("Location: ?action=dashboard&nik_search=$nik_hapus&tab=kehadiran&message=" . urlencode("Data kehadiran berhasil dihapus"));
+            exit;
+        } else {
+            $message = "Gagal menghapus data kehadiran: " . mysqli_error($koneksi);
+        }
+    }
 }
 
 if (isset($_GET['delete'])) {
     $id = $_GET['delete'];
     $query = "DELETE FROM surat_peringatan WHERE id = '$id'";
+    
     if (mysqli_query($koneksi, $query)) {
         header("Location: ?action=kelola&message=" . urlencode("Data SP berhasil dihapus"));
         exit;
@@ -149,6 +295,7 @@ $sp_terbaru = getSPTerbaru($koneksi);
 $total_sp = count($sp_data);
 $sp_aktif = 0;
 $sp_selesai = 0;
+
 foreach ($sp_data as $sp) {
     if ($sp['status'] == 'Aktif') $sp_aktif++;
     if ($sp['status'] == 'Selesai') $sp_selesai++;
@@ -156,8 +303,16 @@ foreach ($sp_data as $sp) {
 
 // DATA MAHASISWA DASHBOARD
 $mahasiswa_detail = null;
+$ringkasan_kehadiran = null;
+$riwayat_kehadiran = null;
+
 if ($action == 'dashboard' && !empty($nik_search)) {
     $mahasiswa_detail = getMahasiswaDetail($koneksi, $nik_search);
+    
+    if ($mahasiswa_detail) {
+        $ringkasan_kehadiran = getRingkasanKehadiran($koneksi, $nik_search);
+        $riwayat_kehadiran = getRiwayatKehadiran($koneksi, $nik_search, 50);
+    }
 }
 ?>
 
@@ -166,7 +321,7 @@ if ($action == 'dashboard' && !empty($nik_search)) {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sistem Surat Peringatan</title>
+  <title>Sistem Surat Peringatan & Kehadiran</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
   <style>
@@ -193,8 +348,33 @@ if ($action == 'dashboard' && !empty($nik_search)) {
     .info-value { color: #333; }
     .attendance-summary { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 15px; }
     .attendance-item { flex: 1; min-width: 120px; text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px; }
-    .attendance-number { font-size: 24px; font-weight: bold; color: #0d6efd; }
+    .attendance-number { font-size: 24px; font-weight: bold; }
     .sp-history-item { padding: 10px 0; border-bottom: 1px solid #eee; }
+    .nav-tabs .nav-link { color: #495057; font-weight: 500; }
+    .nav-tabs .nav-link.active { border-bottom: 3px solid #0d6efd; font-weight: 600; }
+    .status-badge {
+        padding: 5px 10px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+    .status-hadir { background-color: #d4edda; color: #155724; }
+    .status-sakit { background-color: #fff3cd; color: #856404; }
+    .status-izin { background-color: #cce5ff; color: #004085; }
+    .status-tanpa_keterangan { background-color: #f8d7da; color: #721c24; }
+    .persentase-kehadiran {
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: #0d6efd;
+        text-align: center;
+        margin: 10px 0;
+    }
+    .kehadiran-table th {
+        background-color: #f8f9fa;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
   </style>
 </head>
 <body>
@@ -205,7 +385,6 @@ if ($action == 'dashboard' && !empty($nik_search)) {
   </div>
   <ul class="nav flex-column">
     <li class="nav-item"><a class="nav-link <?= ($action == 'dashboard') ? 'active' : '' ?>" href="?action=dashboard"><i class="bi bi-house-door me-2"></i>Dashboard</a></li>
-    <li class="nav-item"><a class="nav-link <?= ($action == 'rekap' && $pdf_action != 'template') ? 'active' : '' ?>" href="?action=rekap"><i class="bi bi-list-ul me-2"></i>Rekap SP</a></li>
     <li class="nav-item"><a class="nav-link <?= ($pdf_action == 'template') ? 'active' : '' ?>" href="?action=rekap&pdf_action=template"><i class="bi bi-file-earmark-pdf me-2"></i>E-Document SP</a></li>
     <li class="nav-item"><a class="nav-link <?= ($action == 'kelola') ? 'active' : '' ?>" href="?action=kelola"><i class="bi bi-gear me-2"></i>Kelola SP</a></li>
   </ul>
@@ -219,7 +398,7 @@ if ($action == 'dashboard' && !empty($nik_search)) {
 <div class="content">
   <div class="dashboard-header">
     <h1>Welcome to Our System, Sir <?= htmlspecialchars($username) ?></h1>
-    <p>Sistem Surat Peringatan Mahasiswa</p>
+    <p>Sistem Surat Peringatan & Kehadiran Mahasiswa</p>
   </div>
   
   <?php if ($message): ?>
@@ -238,7 +417,8 @@ if ($action == 'dashboard' && !empty($nik_search)) {
           <h5 class="card-title">Cari Data Mahasiswa</h5>
           <form method="GET" class="row g-3">
             <input type="hidden" name="action" value="dashboard">
-            <div class="col-md-8"><input type="text" name="nik_search" class="form-control" placeholder="Masukkan nik Mahasiswa" value="<?= htmlspecialchars($nik_search) ?>" required></div>
+            <input type="hidden" name="tab" value="<?= $tab ?>">
+            <div class="col-md-8"><input type="text" name="nik_search" class="form-control" placeholder="Masukkan NIM Mahasiswa" value="<?= htmlspecialchars($nik_search) ?>" required></div>
             <div class="col-md-4"><button type="submit" class="btn btn-primary w-100"><i class="bi bi-search me-2"></i>Cari Mahasiswa</button></div>
           </form>
         </div>
@@ -251,97 +431,264 @@ if ($action == 'dashboard' && !empty($nik_search)) {
           $total_sp_mahasiswa = count($riwayat_sp);
           $sp_aktif_mahasiswa = 0;
           $sp_selesai_mahasiswa = 0;
+          
           foreach ($riwayat_sp as $sp) {
               if ($sp['status'] == 'Aktif') $sp_aktif_mahasiswa++;
               if ($sp['status'] == 'Selesai') $sp_selesai_mahasiswa++;
           }
           ?>
           
-          <div class="info-box mb-4">
-            <h5><i class="bi bi-person-badge me-2"></i>Data Identitas Mahasiswa</h5>
-            <div class="row">
-              <div class="col-md-6">
-                <div class="info-item"><span class="info-label">nik:</span><span class="info-value float-end"><?= htmlspecialchars($mahasiswa_detail['nik']) ?></span></div>
-                <div class="info-item"><span class="info-label">Nama:</span><span class="info-value float-end"><?= htmlspecialchars($mahasiswa_detail['nama']) ?></span></div>
-                <div class="info-item"><span class="info-label">Jurusan:</span><span class="info-value float-end"><?= htmlspecialchars($mahasiswa_detail['jurusan'] ?? 'Belum diisi') ?></span></div>
-              </div>
-              <div class="col-md-6">
-                <div class="info-item"><span class="info-label">Email:</span><span class="info-value float-end"><?= htmlspecialchars($mahasiswa_detail['email'] ?? '-') ?></span></div>
-                <div class="info-item"><span class="info-label">Alamat:</span><span class="info-value float-end"><?= htmlspecialchars($mahasiswa_detail['alamat'] ?? '-') ?></span></div>
-                <div class="info-item"><span class="info-label">Tanggal Daftar:</span><span class="info-value float-end"><?= date('d/m/Y', strtotime($mahasiswa_detail['created_at'])) ?></span></div>
-              </div>
-            </div>
-          </div>
+          <!-- Tab Navigation -->
+          <ul class="nav nav-tabs mb-4">
+            <li class="nav-item">
+              <a class="nav-link <?= ($tab == 'data') ? 'active' : '' ?>" href="?action=dashboard&nik_search=<?= $nik_search ?>&tab=data">Data Mahasiswa</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link <?= ($tab == 'kehadiran') ? 'active' : '' ?>" href="?action=dashboard&nik_search=<?= $nik_search ?>&tab=kehadiran">Kehadiran</a>
+            </li>
+          </ul>
           
-          <div class="info-box mb-4">
-            <h5><i class="bi bi-calendar-check me-2"></i>Ringkasan Kehadiran</h5>
-            <div class="attendance-summary">
-              <?php 
-              $kehadiran = ['Kehadiran' => rand(70, 90).'%', 'Sakit' => rand(5, 15), 'Izin' => rand(1, 8), 'Tanpa Keterangan' => rand(2, 10)];
-              foreach ($kehadiran as $label => $value): ?>
-                <div class="attendance-item"><div class="attendance-number"><?= $value ?></div><div class="attendance-label"><?= $label ?></div></div>
-              <?php endforeach; ?>
-            </div>
-          </div>
-          
-          <div class="info-box mb-4">
-            <h5><i class="bi bi-file-earmark-text me-2"></i>Riwayat Surat Peringatan</h5>
-            <?php if ($total_sp_mahasiswa > 0): ?>
-              <div class="mb-3">
-                <div class="row">
-                  <div class="col-md-4"><div class="text-center p-2 bg-light rounded"><div class="fs-4 fw-bold"><?= $total_sp_mahasiswa ?></div><div class="text-muted">Total SP</div></div></div>
-                  <div class="col-md-4"><div class="text-center p-2 bg-light rounded"><div class="fs-4 fw-bold text-success"><?= $sp_aktif_mahasiswa ?></div><div class="text-muted">SP Aktif</div></div></div>
-                  <div class="col-md-4"><div class="text-center p-2 bg-light rounded"><div class="fs-4 fw-bold text-secondary"><?= $sp_selesai_mahasiswa ?></div><div class="text-muted">SP Selesai</div></div></div>
+          <?php if ($tab == 'data'): ?>
+            <!-- TAB DATA MAHASISWA -->
+            <div class="info-box mb-4">
+              <h5><i class="bi bi-person-badge me-2"></i>Data Identitas Mahasiswa</h5>
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="info-item"><span class="info-label">NIM:</span><span class="info-value float-end"><?= htmlspecialchars($mahasiswa_detail['nik']) ?></span></div>
+                  <div class="info-item"><span class="info-label">Nama:</span><span class="info-value float-end"><?= htmlspecialchars($mahasiswa_detail['nama']) ?></span></div>
+                  <div class="info-item"><span class="info-label">Jurusan:</span><span class="info-value float-end"><?= htmlspecialchars($mahasiswa_detail['jurusan'] ?? 'Belum diisi') ?></span></div>
+                </div>
+                <div class="col-md-6">
+                  <div class="info-item"><span class="info-label">Email:</span><span class="info-value float-end"><?= htmlspecialchars($mahasiswa_detail['email'] ?? '-') ?></span></div>
+                  <div class="info-item"><span class="info-label">Alamat:</span><span class="info-value float-end"><?= htmlspecialchars($mahasiswa_detail['alamat'] ?? '-') ?></span></div>
+                  <div class="info-item"><span class="info-label">Tanggal Daftar:</span><span class="info-value float-end"><?= date('d/m/Y', strtotime($mahasiswa_detail['created_at'])) ?></span></div>
                 </div>
               </div>
-              <?php foreach ($riwayat_sp as $sp): ?>
-                <div class="sp-history-item">
-                  <div class="d-flex justify-content-between">
-                    <div><strong>SP<?= $sp['jenis_sp'] ?> - <?= date('d/m/Y', strtotime($sp['tanggal'])) ?></strong><div class="text-muted"><?= htmlspecialchars(substr($sp['alasan'], 0, 100)) ?></div></div>
-                    <div><span class="badge <?= $sp['status'] == 'Aktif' ? 'bg-success' : 'bg-secondary' ?>"><?= $sp['status'] ?></span></div>
+            </div>
+            
+            <div class="info-box mb-4">
+              <h5><i class="bi bi-calendar-check me-2"></i>Ringkasan Kehadiran</h5>
+              <?php if ($ringkasan_kehadiran): ?>
+              <div class="attendance-summary">
+                <div class="attendance-item">
+                  <div class="persentase-kehadiran"><?= $ringkasan_kehadiran['persentase'] ?>%</div>
+                  <div class="attendance-label">Kehadiran</div>
+                </div>
+                <div class="attendance-item">
+                  <div class="attendance-number text-warning"><?= $ringkasan_kehadiran['sakit'] ?></div>
+                  <div class="attendance-label">Sakit</div>
+                </div>
+                <div class="attendance-item">
+                  <div class="attendance-number text-info"><?= $ringkasan_kehadiran['izin'] ?></div>
+                  <div class="attendance-label">Izin</div>
+                </div>
+                <div class="attendance-item">
+                  <div class="attendance-number text-danger"><?= $ringkasan_kehadiran['tanpa_keterangan'] ?></div>
+                  <div class="attendance-label">Tanpa Keterangan</div>
+                </div>
+              </div>
+              <div class="text-center mt-3">
+                <small class="text-muted">Total <?= $ringkasan_kehadiran['total'] ?> catatan kehadiran</small>
+              </div>
+              <?php else: ?>
+              <div class="alert alert-info">
+                <i class="bi bi-info-circle me-2"></i>
+                Belum ada data kehadiran untuk mahasiswa ini.
+              </div>
+              <?php endif; ?>
+            </div>
+            
+            <div class="info-box mb-4">
+              <h5><i class="bi bi-file-earmark-text me-2"></i>Riwayat Surat Peringatan</h5>
+              <?php if ($total_sp_mahasiswa > 0): ?>
+                <div class="mb-3">
+                  <div class="row">
+                    <div class="col-md-4"><div class="text-center p-2 bg-light rounded"><div class="fs-4 fw-bold"><?= $total_sp_mahasiswa ?></div><div class="text-muted">Total SP</div></div></div>
+                    <div class="col-md-4"><div class="text-center p-2 bg-light rounded"><div class="fs-4 fw-bold text-success"><?= $sp_aktif_mahasiswa ?></div><div class="text-muted">SP Aktif</div></div></div>
+                    <div class="col-md-4"><div class="text-center p-2 bg-light rounded"><div class="fs-4 fw-bold text-secondary"><?= $sp_selesai_mahasiswa ?></div><div class="text-muted">SP Selesai</div></div></div>
                   </div>
                 </div>
-              <?php endforeach; ?>
-            <?php else: ?>
-              <div class="text-center py-4"><i class="bi bi-check-circle display-4 text-success"></i><h5 class="mt-3">Tidak Ada Surat Peringatan</h5><p class="text-muted">Mahasiswa ini tidak memiliki riwayat SP</p></div>
-            <?php endif; ?>
-          </div>
-          
-          <div class="info-box">
-            <h5><i class="bi bi-clipboard-data me-2"></i>Status Akademik & Pelanggaran</h5>
-            <div class="row">
-              <div class="col-md-6">
-                <div class="info-item"><span class="info-label">Status Akademik:</span><span class="info-value float-end"><span class="badge bg-success">Aktif</span></span></div>
-                <div class="info-item"><span class="info-label">IPK:</span><span class="info-value float-end"><?= number_format(rand(250, 375) / 100, 2) ?></span></div>
-                <div class="info-item"><span class="info-label">SKS Tempuh:</span><span class="info-value float-end"><?= rand(80, 144) ?></span></div>
-              </div>
-              <div class="col-md-6">
-                <div class="info-item"><span class="info-label">Status Pelanggaran:</span><span class="info-value float-end">
-                  <?php if ($total_sp_mahasiswa == 0): ?><span class="badge bg-success">Tidak Ada</span>
-                  <?php elseif ($total_sp_mahasiswa == 1): ?><span class="badge bg-warning">Ringan</span>
-                  <?php elseif ($total_sp_mahasiswa == 2): ?><span class="badge bg-warning text-dark">Sedang</span>
-                  <?php else: ?><span class="badge bg-danger">Berat</span><?php endif; ?>
-                </span></div>
-                <?php 
-                $tingkat_tertinggi = 0;
-                foreach ($riwayat_sp as $sp) if ($sp['jenis_sp'] > $tingkat_tertinggi) $tingkat_tertinggi = $sp['jenis_sp'];
-                ?>
-                <div class="info-item"><span class="info-label">Tingkat SP Tertinggi:</span><span class="info-value float-end">
-                  <?php if ($tingkat_tertinggi == 0): ?><span class="badge bg-success">Tidak Ada</span>
-                  <?php else: ?><span class="badge bg-danger">SP<?= $tingkat_tertinggi ?></span><?php endif; ?>
-                </span></div>
-                <div class="info-item"><span class="info-label">Rekomendasi:</span><span class="info-value float-end">
-                  <?php if ($total_sp_mahasiswa == 0): ?><span class="badge bg-success">Lanjutkan</span>
-                  <?php elseif ($total_sp_mahasiswa == 1): ?><span class="badge bg-warning">Peringatan</span>
-                  <?php elseif ($total_sp_mahasiswa == 2): ?><span class="badge bg-warning text-dark">Pembinaan</span>
-                  <?php else: ?><span class="badge bg-danger">Evaluasi Khusus</span><?php endif; ?>
-                </span></div>
+                <?php foreach ($riwayat_sp as $sp): ?>
+                  <div class="sp-history-item">
+                    <div class="d-flex justify-content-between">
+                      <div><strong>SP<?= $sp['jenis_sp'] ?> - <?= date('d/m/Y', strtotime($sp['tanggal'])) ?></strong><div class="text-muted"><?= htmlspecialchars(substr($sp['alasan'], 0, 100)) ?></div></div>
+                      <div><span class="badge <?= $sp['status'] == 'Aktif' ? 'bg-success' : 'bg-secondary' ?>"><?= $sp['status'] ?></span></div>
+                    </div>
+                  </div>
+                <?php endforeach; ?>
+              <?php else: ?>
+                <div class="text-center py-4"><i class="bi bi-check-circle display-4 text-success"></i><h5 class="mt-3">Tidak Ada Surat Peringatan</h5><p class="text-muted">Mahasiswa ini tidak memiliki riwayat SP</p></div>
+              <?php endif; ?>
+            </div>
+            
+            <div class="info-box">
+              <h5><i class="bi bi-clipboard-data me-2"></i>Status Akademik & Pelanggaran</h5>
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="info-item"><span class="info-label">Status Akademik:</span><span class="info-value float-end"><span class="badge bg-success">Aktif</span></span></div>
+                  <div class="info-item"><span class="info-label">IPK:</span><span class="info-value float-end"><?= number_format(rand(250, 375) / 100, 2) ?></span></div>
+                  <div class="info-item"><span class="info-label">SKS Tempuh:</span><span class="info-value float-end"><?= rand(80, 144) ?></span></div>
+                </div>
+                <div class="col-md-6">
+                  <div class="info-item"><span class="info-label">Status Pelanggaran:</span><span class="info-value float-end">
+                    <?php if ($total_sp_mahasiswa == 0): ?><span class="badge bg-success">Tidak Ada</span>
+                    <?php elseif ($total_sp_mahasiswa == 1): ?><span class="badge bg-warning">Ringan</span>
+                    <?php elseif ($total_sp_mahasiswa == 2): ?><span class="badge bg-warning text-dark">Sedang</span>
+                    <?php else: ?><span class="badge bg-danger">Berat</span><?php endif; ?>
+                  </span></div>
+                  <?php 
+                  $tingkat_tertinggi = 0;
+                  foreach ($riwayat_sp as $sp) if ($sp['jenis_sp'] > $tingkat_tertinggi) $tingkat_tertinggi = $sp['jenis_sp'];
+                  ?>
+                  <div class="info-item"><span class="info-label">Tingkat SP Tertinggi:</span><span class="info-value float-end">
+                    <?php if ($tingkat_tertinggi == 0): ?><span class="badge bg-success">Tidak Ada</span>
+                    <?php else: ?><span class="badge bg-danger">SP<?= $tingkat_tertinggi ?></span><?php endif; ?>
+                  </span></div>
+                  <div class="info-item"><span class="info-label">Rekomendasi:</span><span class="info-value float-end">
+                    <?php if ($total_sp_mahasiswa == 0): ?><span class="badge bg-success">Lanjutkan</span>
+                    <?php elseif ($total_sp_mahasiswa == 1): ?><span class="badge bg-warning">Peringatan</span>
+                    <?php elseif ($total_sp_mahasiswa == 2): ?><span class="badge bg-warning text-dark">Pembinaan</span>
+                    <?php else: ?><span class="badge bg-danger">Evaluasi Khusus</span><?php endif; ?>
+                  </span></div>
+                </div>
               </div>
             </div>
-          </div>
+            
+          <?php elseif ($tab == 'kehadiran'): ?>
+            <!-- TAB KEHADIRAN -->
+            <div class="info-box mb-4">
+              <h5><i class="bi bi-calendar-check me-2"></i>Ringkasan Kehadiran</h5>
+              <?php if ($ringkasan_kehadiran): ?>
+              <div class="attendance-summary mb-4">
+                <div class="attendance-item">
+                  <div class="persentase-kehadiran"><?= $ringkasan_kehadiran['persentase'] ?>%</div>
+                  <div class="attendance-label">Kehadiran</div>
+                </div>
+                <div class="attendance-item">
+                  <div class="attendance-number text-warning"><?= $ringkasan_kehadiran['sakit'] ?></div>
+                  <div class="attendance-label">Sakit</div>
+                </div>
+                <div class="attendance-item">
+                  <div class="attendance-number text-info"><?= $ringkasan_kehadiran['izin'] ?></div>
+                  <div class="attendance-label">Izin</div>
+                </div>
+                <div class="attendance-item">
+                  <div class="attendance-number text-danger"><?= $ringkasan_kehadiran['tanpa_keterangan'] ?></div>
+                  <div class="attendance-label">Tanpa Keterangan</div>
+                </div>
+              </div>
+              <div class="alert alert-success">
+                <i class="bi bi-calculator me-2"></i>
+                <strong>Perhitungan:</strong> Persentase = (Hadir ÷ Total) × 100% = 
+                (<?= $ringkasan_kehadiran['hadir'] ?> ÷ <?= $ringkasan_kehadiran['total'] ?>) × 100% = <?= $ringkasan_kehadiran['persentase'] ?>%
+              </div>
+              <?php else: ?>
+              <div class="alert alert-info">
+                <i class="bi bi-info-circle me-2"></i>
+                Belum ada data kehadiran untuk mahasiswa ini.
+              </div>
+              <?php endif; ?>
+            </div>
+            
+            <div class="info-box mb-4">
+              <h5><i class="bi bi-plus-circle me-2"></i>Tambah Data Kehadiran</h5>
+              <form method="POST">
+                <input type="hidden" name="simpan_kehadiran" value="1">
+                <input type="hidden" name="nik" value="<?= htmlspecialchars($mahasiswa_detail['nik']) ?>">
+                
+                <div class="row mb-3">
+                  <div class="col-md-6">
+                    <label class="form-label">Tanggal *</label>
+                    <input type="date" name="tanggal" class="form-control" value="<?= date('Y-m-d') ?>" required>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">Status Kehadiran *</label>
+                    <select name="status" class="form-select" required>
+                      <option value="hadir">Hadir</option>
+                      <option value="sakit">Sakit</option>
+                      <option value="izin">Izin</option>
+                      <option value="tanpa_keterangan">Tanpa Keterangan</option>
+                    </select>
+                  </div>
+                </div>
+                
+                <div class="mb-3">
+                  <label class="form-label">Keterangan (Opsional)</label>
+                  <textarea name="keterangan" class="form-control" rows="2" placeholder="Contoh: Sakit demam, Izin keluarga, dll."></textarea>
+                  <small class="text-muted">Kosongkan jika tidak ada keterangan khusus</small>
+                </div>
+                
+                <div class="alert alert-info">
+                  <i class="bi bi-info-circle me-2"></i>
+                  <strong>Catatan:</strong> Data kehadiran akan selalu ditambahkan sebagai entri baru.
+                  Anda bisa menambahkan multiple data untuk tanggal yang sama.
+                  Contoh: Sakit 5 kali, Izin 3 kali, dll.
+                </div>
+                
+                <button type="submit" class="btn btn-primary"><i class="bi bi-save me-2"></i>Simpan Data Kehadiran</button>
+              </form>
+            </div>
+            
+            <div class="info-box">
+              <h5><i class="bi bi-clock-history me-2"></i>Riwayat Kehadiran (Semua Data)</h5>
+              <?php if (!empty($riwayat_kehadiran)): ?>
+                <div class="table-responsive">
+                  <table class="table table-hover kehadiran-table">
+                    <thead class="table-light">
+                      <tr>
+                        <th>No</th>
+                        <th>Tanggal</th>
+                        <th>Status</th>
+                        <th>Keterangan</th>
+                        <th>Tanggal Input</th>
+                        <th>Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <?php $no = 1; foreach ($riwayat_kehadiran as $kehadiran): 
+                        $status_class = 'status-' . $kehadiran['status'];
+                        $status_text = ucfirst(str_replace('_', ' ', $kehadiran['status']));
+                      ?>
+                        <tr>
+                          <td><?= $no++ ?></td>
+                          <td><?= date('d/m/Y', strtotime($kehadiran['tanggal'])) ?></td>
+                          <td><span class="status-badge <?= $status_class ?>"><?= $status_text ?></span></td>
+                          <td><?= htmlspecialchars($kehadiran['keterangan'] ?? '-') ?></td>
+                          <td><?= date('d/m/Y H:i', strtotime($kehadiran['created_at'])) ?></td>
+                          <td>
+                            <form method="POST" style="display:inline;" onsubmit="return confirm('Yakin hapus data kehadiran ini?')">
+                              <input type="hidden" name="hapus_kehadiran" value="1">
+                              <input type="hidden" name="id_hapus" value="<?= $kehadiran['id'] ?>">
+                              <input type="hidden" name="nik_hapus" value="<?= $mahasiswa_detail['nik'] ?>">
+                              <button type="submit" class="btn btn-sm btn-danger" title="Hapus">
+                                <i class="bi bi-trash"></i>
+                              </button>
+                            </form>
+                          </td>
+                        </tr>
+                      <?php endforeach; ?>
+                    </tbody>
+                  </table>
+                </div>
+                <div class="mt-3 text-center">
+                  <small class="text-muted">
+                    <i class="bi bi-info-circle"></i> Total <?= count($riwayat_kehadiran) ?> data kehadiran ditemukan.
+                    Data disimpan berdasarkan tanggal dan waktu input.
+                  </small>
+                </div>
+              <?php else: ?>
+                <div class="text-center py-4">
+                  <i class="bi bi-calendar-x display-4 text-muted"></i>
+                  <h5 class="mt-3">Belum Ada Data Kehadiran</h5>
+                  <p class="text-muted">Silakan tambah data kehadiran untuk mahasiswa ini</p>
+                </div>
+              <?php endif; ?>
+            </div>
+            
+          <?php endif; ?>
           
         <?php else: ?>
-          <div class="alert alert-warning"><i class="bi bi-exclamation-triangle me-2"></i>Mahasiswa dengan nik <strong><?= htmlspecialchars($nik_search) ?></strong> tidak ditemukan.</div>
+          <div class="alert alert-warning"><i class="bi bi-exclamation-triangle me-2"></i>Mahasiswa dengan NIM <strong><?= htmlspecialchars($nik_search) ?></strong> tidak ditemukan.</div>
         <?php endif; ?>
       <?php else: ?>
         <!-- STATISTIK SISTEM -->
@@ -434,66 +781,6 @@ if ($action == 'dashboard' && !empty($nik_search)) {
       </div>
     </div>
     
-  <?php elseif ($action == 'rekap'): ?>
-    <!-- REKAP SP -->
-    <div class="table-container">
-      <div class="d-flex justify-content-between align-items-center mb-4">
-        <h4 class="mb-0"><i class="bi bi-list-ul me-2"></i>Rekap Surat Peringatan</h4>
-        <form method="GET" class="d-flex me-2" style="max-width: 300px;">
-          <input type="hidden" name="action" value="rekap">
-          <input type="text" name="search" class="form-control me-2" placeholder="Cari nik/Nama..." value="<?= htmlspecialchars($search) ?>">
-          <button type="submit" class="btn btn-primary"><i class="bi bi-search"></i></button>
-        </form>
-      </div>
-      <div class="row mb-4">
-        <?php 
-        $rekap_stats = [
-          ['number' => $total_sp, 'label' => 'Total SP'],
-          ['number' => $sp_aktif, 'label' => 'SP Aktif'],
-          ['number' => $sp_selesai, 'label' => 'SP Selesai'],
-          ['number' => date('Y'), 'label' => 'Tahun Akademik']
-        ];
-        foreach ($rekap_stats as $stat): ?>
-          <div class="col-md-3"><div class="stats-card"><div class="stats-number"><?= $stat['number'] ?></div><div class="stats-label"><?= $stat['label'] ?></div></div></div>
-        <?php endforeach; ?>
-      </div>
-      <?php if (empty($sp_data)): ?>
-        <div class="alert alert-info text-center py-4"><i class="bi bi-info-circle me-2"></i>Tidak ada data surat peringatan.</div>
-      <?php else: ?>
-        <div class="table-responsive">
-          <table class="table table-hover">
-            <thead class="table-light"><tr><th>No</th><th>nik</th><th>Nama</th><th>Jenis SP</th><th>Tanggal</th><th>Alasan</th><th>Status</th><th>Aksi</th></tr></thead>
-            <tbody>
-              <?php foreach ($sp_data as $index => $sp): 
-                $status_class = match($sp['status']) {
-                  'Aktif' => 'badge-status-aktif',
-                  'Selesai' => 'badge-status-selesai',
-                  'Dicabut' => 'badge-status-dicabut',
-                  default => 'badge-secondary'
-                };
-              ?>
-                <tr>
-                  <td><?= $index + 1 ?></td>
-                  <td><strong><?= htmlspecialchars($sp['nik']) ?></strong></td>
-                  <td><?= htmlspecialchars($sp['nama_mahasiswa'] ?? 'Tidak diketahui') ?></td>
-                  <td><span class="badge badge-sp<?= $sp['jenis_sp'] ?>">SP<?= $sp['jenis_sp'] ?></span></td>
-                  <td><?= date('d/m/Y', strtotime($sp['tanggal'])) ?></td>
-                  <td><?= htmlspecialchars(substr($sp['alasan'], 0, 50)) . (strlen($sp['alasan']) > 50 ? '...' : '') ?></td>
-                  <td><span class="badge <?= $status_class ?>"><?= htmlspecialchars($sp['status']) ?></span></td>
-                  <td>
-                    <div class="btn-group">
-                      <a href="cetak_pdf.php?id=<?= $sp['id'] ?>" class="btn btn-sm btn-danger" target="_blank" title="Cetak PDF"><i class="bi bi-printer"></i></a>
-                      <a href="?action=kelola&view=<?= $sp['id'] ?>" class="btn btn-sm btn-info" title="Detail"><i class="bi bi-eye"></i></a>
-                    </div>
-                  </td>
-                </tr>
-              <?php endforeach; ?>
-            </tbody>
-          </table>
-        </div>
-      <?php endif; ?>
-    </div>
-    
   <?php elseif ($action == 'kelola'): ?>
     <!-- KELOLA SP -->
     <div class="row">
@@ -503,9 +790,9 @@ if ($action == 'dashboard' && !empty($nik_search)) {
           <form method="POST">
             <input type="hidden" name="tambah_sp" value="1">
             <div class="row mb-3">
-              <div class="col-md-6"><label class="form-label">nik Mahasiswa *</label><input type="text" name="nik" class="form-control" required placeholder="Contoh: 20231001"></div>
+              <div class="col-md-6"><label class="form-label">NIM Mahasiswa *</label><input type="text" name="nik" class="form-control" required placeholder="Contoh: 20231001"></div>
               <div class="col-md-6"><label class="form-label">Jenis SP *</label><select name="jenis_sp" class="form-select" required><option value="">Pilih Jenis SP</option><option value="1">SP 1 (Peringatan)</option><option value="2">SP 2 (Peringatan Keras)</option><option value="3">SP 3 (Skorsing)</option></select></div>
-            </div>
+            </div>        
             <div class="mb-3"><label class="form-label">Alasan Pelanggaran *</label><textarea name="alasan" class="form-control" rows="3" required placeholder="Jelaskan alasan penerbitan SP"></textarea></div>
             <div class="row mb-3">
               <div class="col-md-6"><label class="form-label">Tanggal Terbit *</label><input type="date" name="tanggal" class="form-control" required value="<?= date('Y-m-d') ?>"></div>
@@ -522,7 +809,7 @@ if ($action == 'dashboard' && !empty($nik_search)) {
           <?php else: ?>
             <div class="table-responsive">
               <table class="table table-hover">
-                <thead class="table-light"><tr><th>No</th><th>nik</th><th>Nama</th><th>Jenis SP</th><th>Status</th><th>Aksi</th></tr></thead>
+                <thead class="table-light"><tr><th>No</th><th>NIM</th><th>Nama</th><th>Jenis SP</th><th>Status</th><th>Aksi</th></tr></thead>
                 <tbody>
                   <?php foreach ($sp_data as $index => $sp): ?>
                     <tr>
@@ -530,7 +817,7 @@ if ($action == 'dashboard' && !empty($nik_search)) {
                       <td><?= htmlspecialchars($sp['nik']) ?></td>
                       <td><?= htmlspecialchars($sp['nama_mahasiswa'] ?? 'N/A') ?></td>
                       <td><span class="badge badge-sp<?= $sp['jenis_sp'] ?>">SP<?= $sp['jenis_sp'] ?></span></td>
-                      <td><span class="badge <?= $sp['status'] == 'Aktif' ? 'badge-status-aktif' : 'badge-status-selesai' ?>"><?= $sp['status'] ?></span></td>
+                      <td><span class="badge <?= $sp['status'] == 'Aktif' ? 'bg-success' : 'bg-secondary' ?>"><?= $sp['status'] ?></span></td>
                       <td>
                         <div class="btn-group">
                           <a href="cetak_pdf.php?id=<?= $sp['id'] ?>" class="btn btn-sm btn-danger" target="_blank" title="Cetak PDF"><i class="bi bi-printer"></i></a>
