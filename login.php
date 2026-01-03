@@ -82,7 +82,7 @@ if (isset($_POST['login'])) {
 
         <form method="POST">
             <div class="mb-3">
-                <label class="form-label">NIK</label>
+                <label class="form-label">NIK/NIM</label>
                 <input type="text" class="form-control" name="nik" required>
             </div>
 

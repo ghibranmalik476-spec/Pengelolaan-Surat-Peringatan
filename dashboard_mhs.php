@@ -106,7 +106,7 @@ body { background-color: #f8f9fa; }
                 <div class="card-body">
                     <h6 class="text-muted">Data Mahasiswa</h6>
                     <hr>
-                    <p class="mb-1"><strong>NIK:</strong> <?= $nik ?></p>
+                    <p class="mb-1"><strong>NIM:</strong> <?= $nik ?></p>
                     <p class="mb-1"><strong>Nama:</strong> <?= $mhs['nama'] ?></p>
                     <p class="mb-0"><strong>Jurusan:</strong> <?= $mhs['jurusan'] ?></p>
                 </div>
