@@ -17,81 +17,59 @@ $q = mysqli_query($koneksi, "
 ");
 $mhs = mysqli_fetch_assoc($q);
 
-// PROSES EKSPOR PDF
-if (isset($_GET['export_pdf'])) {
-    require_once('tcpdf/tcpdf.php'); // Pastikan library TCPDF sudah diinstall
+// PROSES DOWNLOAD FILE PDF YANG SUDAH DIUPLOAD STAFF
+if (isset($_GET['download_pdf'])) {
+    $id_sp = $_GET['download_pdf'];
     
-    // Buat objek PDF baru
-    $pdf = new TCPDF('P', 'mm', 'A4', true, 'UTF-8', false);
-    
-    // Set dokumen meta
-    $pdf->SetCreator('Sistem SP Mahasiswa');
-    $pdf->SetAuthor('Politeknik');
-    $pdf->SetTitle('Riwayat Surat Peringatan - ' . $mhs['nama']);
-    $pdf->SetSubject('Riwayat SP');
-    
-    // Remove default header/footer
-    $pdf->setPrintHeader(false);
-    $pdf->setPrintFooter(false);
-    
-    // Add a page
-    $pdf->AddPage();
-    
-    // Set font
-    $pdf->SetFont('helvetica', 'B', 16);
-    
-    // Judul
-    $pdf->Cell(0, 10, 'RIWAYAT SURAT PERINGATAN', 0, 1, 'C');
-    $pdf->SetFont('helvetica', '', 12);
-    $pdf->Cell(0, 10, 'Mahasiswa: ' . $mhs['nama'], 0, 1, 'C');
-    $pdf->Cell(0, 10, 'NIK: ' . $nik . ' | Jurusan: ' . $mhs['jurusan'], 0, 1, 'C');
-    $pdf->Cell(0, 10, 'Tanggal Cetak: ' . date('d/m/Y H:i'), 0, 1, 'C');
-    $pdf->Ln(5);
-    
-    // Ambil data SP
-    $surat_peringatan = mysqli_query($koneksi, "
-        SELECT * FROM surat_peringatan
-        WHERE nik='$nik' 
-        ORDER BY tanggal DESC
+    // Ambil data SP beserta file PDF
+    $query = mysqli_query($koneksi, "
+        SELECT file_pdf, jenis_sp, tanggal 
+        FROM surat_peringatan 
+        WHERE id = '$id_sp' AND nik = '$nik'
     ");
     
-    if (mysqli_num_rows($surat_peringatan) == 0) {
-        $pdf->SetFont('helvetica', 'I', 12);
-        $pdf->Cell(0, 10, 'Tidak ada riwayat Surat Peringatan', 0, 1, 'C');
+    if (mysqli_num_rows($query) > 0) {
+        $data = mysqli_fetch_assoc($query);
+        $file_path = $data['file_pdf'];
+        
+        if (!empty($file_path) && file_exists($file_path)) {
+            // Set header untuk download file
+            header('Content-Description: File Transfer');
+            header('Content-Type: application/pdf');
+            header('Content-Disposition: attachment; filename="SP' . $data['jenis_sp'] . '_' . date('Ymd', strtotime($data['tanggal'])) . '.pdf"');
+            header('Content-Transfer-Encoding: binary');
+            header('Expires: 0');
+            header('Cache-Control: must-revalidate');
+            header('Pragma: public');
+            header('Content-Length: ' . filesize($file_path));
+            
+            // Clear output buffer
+            ob_clean();
+            flush();
+            
+            // Read file and output
+            readfile($file_path);
+            exit;
+        } else {
+            // Jika file tidak ditemukan, beri pesan error
+            die("
+            <div style='padding:20px;text-align:center;'>
+                <h3>File PDF tidak ditemukan!</h3>
+                <p>File SP yang diminta tidak tersedia di server.</p>
+                <p>Silakan hubungi staff akademik untuk informasi lebih lanjut.</p>
+                <a href='dashboard_mhs.php' class='btn btn-primary'>Kembali ke Dashboard</a>
+            </div>");
+        }
     } else {
-        // Header tabel
-        $pdf->SetFont('helvetica', 'B', 10);
-        $header = array('No', 'Jenis SP', 'Alasan', 'Tanggal', 'Status', 'Keterangan');
-        $w = array(10, 15, 60, 25, 20, 40);
-        
-        for($i=0; $i<count($header); $i++) {
-            $pdf->Cell($w[$i], 7, $header[$i], 1, 0, 'C');
-        }
-        $pdf->Ln();
-        
-        // Data tabel
-        $pdf->SetFont('helvetica', '', 9);
-        $no = 1;
-        while($row = mysqli_fetch_assoc($surat_peringatan)) {
-            $pdf->Cell($w[0], 6, $no++, 1);
-            $pdf->Cell($w[1], 6, 'SP' . $row['jenis_sp'], 1);
-            $pdf->Cell($w[2], 6, substr($row['alasan'], 0, 50), 1);
-            $pdf->Cell($w[3], 6, date('d/m/Y', strtotime($row['tanggal'])), 1);
-            $pdf->Cell($w[4], 6, $row['status'], 1);
-            $pdf->Cell($w[5], 6, substr($row['keterangan'] ?? '-', 0, 30), 1);
-            $pdf->Ln();
-        }
+        die("
+        <div style='padding:20px;text-align:center;'>
+            <h3>Data tidak ditemukan!</h3>
+            <p>SP yang diminta tidak ditemukan atau tidak sesuai dengan akun Anda.</p>
+            <a href='dashboard_mhs.php' class='btn btn-primary'>Kembali ke Dashboard</a>
+        </div>");
     }
-    
-    // Tambahkan catatan
-    $pdf->Ln(10);
-    $pdf->SetFont('helvetica', 'I', 10);
-    $pdf->MultiCell(0, 5, 'Catatan: Dokumen ini dicetak secara otomatis dari Sistem Surat Peringatan. Keaslian dokumen dapat diverifikasi melalui staff akademik.', 0, 'L');
-    
-    // Output PDF
-    $pdf->Output('Riwayat_SP_' . $nik . '_' . date('Ymd') . '.pdf', 'D');
-    exit;
 }
+
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -122,6 +100,7 @@ body { background-color: #f8f9fa; }
 }
 .status-active { background-color: #ffc107; color: #000; padding: 3px 8px; border-radius: 4px; }
 .status-done { background-color: #198754; color: #fff; padding: 3px 8px; border-radius: 4px; }
+.status-dicabut { background-color: #6c757d; color: #fff; padding: 3px 8px; border-radius: 4px; }
 </style>
 </head>
 <body>
@@ -187,8 +166,8 @@ body { background-color: #f8f9fa; }
                     <h6 class="text-muted">Data Mahasiswa</h6>
                     <hr>
                     <p class="mb-1"><strong>NIK:</strong> <?= $nik ?></p>
-                    <p class="mb-1"><strong>Nama:</strong> <?= $mhs['nama'] ?></p>
-                    <p class="mb-0"><strong>Jurusan:</strong> <?= $mhs['jurusan'] ?></p>
+                    <p class="mb-1"><strong>Nama:</strong> <?= htmlspecialchars($mhs['nama']) ?></p>
+                    <p class="mb-0"><strong>Jurusan:</strong> <?= htmlspecialchars($mhs['jurusan']) ?></p>
                 </div>
             </div>
         </div>
@@ -197,25 +176,10 @@ body { background-color: #f8f9fa; }
         <div class="col-md-8">
             <div class="card shadow-sm">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h6 class="text-muted mb-0">Riwayat Surat Peringatan</h6>
-                        <?php
-                        // Cek apakah ada riwayat SP
-                        $cek_sp = mysqli_query($koneksi, "
-                            SELECT COUNT(*) as total FROM surat_peringatan
-                            WHERE nik='$nik'
-                        ");
-                        $total_sp = mysqli_fetch_assoc($cek_sp)['total'];
-                        
-                        if ($total_sp > 0): ?>
-                        <a href="?export_pdf=1" class="btn btn-danger btn-sm">
-                            <i class="bi bi-file-earmark-pdf me-1"></i> Export PDF
-                        </a>
-                        <?php endif; ?>
-                    </div>
                     <hr>
 
                     <?php
+                    // Query data SP termasuk file PDF
                     $surat_peringatan = mysqli_query($koneksi, "
                         SELECT * FROM surat_peringatan
                         WHERE nik='$nik' 
@@ -237,6 +201,7 @@ body { background-color: #f8f9fa; }
                                         <th>Alasan</th>
                                         <th>Tanggal</th>
                                         <th>Status</th>
+                                        <th>File PDF</th>
                                         <th>Keterangan</th>
                                     </tr>
                                 </thead>
@@ -258,9 +223,23 @@ body { background-color: #f8f9fa; }
                                         <td><?= htmlspecialchars($r['alasan']) ?></td>
                                         <td class="text-center"><?= date('d-m-Y', strtotime($r['tanggal'])) ?></td>
                                         <td class="text-center">
-                                            <span class="status-<?= strtolower($r['status']) ?>">
+                                            <?php 
+                                            $status_class = 'status-active';
+                                            if ($r['status'] == 'Selesai') $status_class = 'status-done';
+                                            if ($r['status'] == 'Dicabut') $status_class = 'status-dicabut';
+                                            ?>
+                                            <span class="<?= $status_class ?>">
                                                 <?= $r['status'] ?>
                                             </span>
+                                        </td>
+                                        <td class="text-center">
+                                            <?php if (!empty($r['file_pdf'])): ?>
+                                                <a href="?download_pdf=<?= $r['id'] ?>" class="btn btn-sm btn-success" title="Download PDF">
+                                                    <i class="bi bi-download"></i> Download
+                                                </a>
+                                            <?php else: ?>
+                                                <span class="text-muted">-</span>
+                                            <?php endif; ?>
                                         </td>
                                         <td><?= htmlspecialchars($r['keterangan'] ?? '-') ?></td>
                                     </tr>
@@ -269,11 +248,12 @@ body { background-color: #f8f9fa; }
                             </table>
                         </div>
                         
-                        <!-- INFO PDF -->
-                        <div class="alert alert-info mt-3">
-                            <i class="bi bi-info-circle me-2"></i>
-                            Anda dapat mengekspor riwayat SP ini ke format PDF dengan mengklik tombol <strong>"Export PDF"</strong> di atas.
-                            Dokumen PDF dapat digunakan untuk keperluan administrasi atau arsip pribadi.
+                        <!-- LOADING INDICATOR -->
+                        <div id="pdfLoading" style="display:none;" class="text-center">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="mt-2">Menyiapkan dokumen...</p>
                         </div>
                     <?php endif; ?>
 
@@ -317,6 +297,34 @@ sidebar.addEventListener('shown.bs.offcanvas', () => {
 sidebar.addEventListener('hidden.bs.offcanvas', () => {
     content.style.marginLeft = "0";
 });
+
+// Tambahkan loading indicator untuk PDF download
+document.addEventListener('DOMContentLoaded', function() {
+    
+    // Untuk semua download link
+    downloadLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            const loadingDiv = document.getElementById('pdfLoading');
+            if (loadingDiv) {
+                loadingDiv.style.display = 'block';
+            }
+            
+            setTimeout(function() {
+                if (loadingDiv) {
+                    loadingDiv.style.display = 'none';
+                }
+            }, 3000);
+        });
+    });
+});
+
+// Jika ada parameter download di URL, tampilkan loading
+if (window.location.search.includes('download_pdf=')) {
+    const loadingDiv = document.getElementById('pdfLoading');
+    if (loadingDiv) {
+        loadingDiv.style.display = 'block';
+    }
+}
 </script>
 </body>
 </html>
