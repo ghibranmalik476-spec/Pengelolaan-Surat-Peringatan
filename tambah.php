@@ -24,16 +24,12 @@ if (!$role || !$nik || !$username) {
     exit;
 }
 
-// password awal = nik
 $password = password_hash($nik, PASSWORD_DEFAULT);
 
 mysqli_begin_transaction($koneksi);
 
 try {
 
-    // =============================
-    // CEK DUPLIKAT NIK / USERNAME
-    // =============================
     $cek = $koneksi->prepare(
         "SELECT id FROM user WHERE nik = ? OR username = ?"
     );
@@ -54,7 +50,6 @@ try {
             throw new Exception("Nama dan Jurusan wajib diisi untuk mahasiswa");
         }
 
-        // insert mahasiswa
         $stmt = $koneksi->prepare(
             "INSERT INTO mahasiswa (nik, nama, jurusan)
              VALUES (?,?,?)"

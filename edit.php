@@ -12,7 +12,6 @@ $nik = $_POST['nik'] ?? '';
 $username = $_POST['username'] ?? '';
 $role = $_POST['role'] ?? '';
 
-// Password tetap sama seperti sebelumnya (tidak berubah)
 if ($id && $nik && $username && $role) {
 
     $query = "UPDATE user 

@@ -9,7 +9,6 @@ include 'koneksi.php';
 
 $nik = $_SESSION['nik'];
 
-// ambil data mahasiswa
 $q = mysqli_query($koneksi, "
     SELECT nama, jurusan 
     FROM mahasiswa 
@@ -17,11 +16,9 @@ $q = mysqli_query($koneksi, "
 ");
 $mhs = mysqli_fetch_assoc($q);
 
-// PROSES DOWNLOAD FILE PDF YANG SUDAH DIUPLOAD STAFF
 if (isset($_GET['download_pdf'])) {
     $id_sp = $_GET['download_pdf'];
     
-    // Ambil data SP beserta file PDF
     $query = mysqli_query($koneksi, "
         SELECT file_pdf, jenis_sp, tanggal 
         FROM surat_peringatan 
@@ -33,7 +30,6 @@ if (isset($_GET['download_pdf'])) {
         $file_path = $data['file_pdf'];
         
         if (!empty($file_path) && file_exists($file_path)) {
-            // Set header untuk download file
             header('Content-Description: File Transfer');
             header('Content-Type: application/pdf');
             header('Content-Disposition: attachment; filename="SP' . $data['jenis_sp'] . '_' . date('Ymd', strtotime($data['tanggal'])) . '.pdf"');
@@ -43,15 +39,12 @@ if (isset($_GET['download_pdf'])) {
             header('Pragma: public');
             header('Content-Length: ' . filesize($file_path));
             
-            // Clear output buffer
             ob_clean();
             flush();
             
-            // Read file and output
             readfile($file_path);
             exit;
         } else {
-            // Jika file tidak ditemukan, beri pesan error
             die("
             <div style='padding:20px;text-align:center;'>
                 <h3>File PDF tidak ditemukan!</h3>
@@ -179,7 +172,6 @@ body { background-color: #f8f9fa; }
                     <hr>
 
                     <?php
-                    // Query data SP termasuk file PDF
                     $surat_peringatan = mysqli_query($koneksi, "
                         SELECT * FROM surat_peringatan
                         WHERE nik='$nik' 
@@ -298,10 +290,8 @@ sidebar.addEventListener('hidden.bs.offcanvas', () => {
     content.style.marginLeft = "0";
 });
 
-// Tambahkan loading indicator untuk PDF download
 document.addEventListener('DOMContentLoaded', function() {
     
-    // Untuk semua download link
     downloadLinks.forEach(link => {
         link.addEventListener('click', function(e) {
             const loadingDiv = document.getElementById('pdfLoading');
@@ -318,7 +308,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// Jika ada parameter download di URL, tampilkan loading
 if (window.location.search.includes('download_pdf=')) {
     const loadingDiv = document.getElementById('pdfLoading');
     if (loadingDiv) {

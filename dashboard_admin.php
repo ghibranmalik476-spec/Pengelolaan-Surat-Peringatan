@@ -169,17 +169,14 @@ $username = $_SESSION['username'];
 <!-- BOOTSTRAP JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
-<!-- SCRIPT AGAR SIDEBAR MENDORONG DASHBOARD -->
 <script>
     const sidebar = document.getElementById('sidebar');
     const content = document.querySelector('.content');
 
-    // Saat sidebar dibuka (push content)
     sidebar.addEventListener('shown.bs.offcanvas', function () {
         content.style.marginLeft = "270px"; 
     });
 
-    // Saat sidebar ditutup (kembali normal)
     sidebar.addEventListener('hidden.bs.offcanvas', function () {
         content.style.marginLeft = "0";
     });

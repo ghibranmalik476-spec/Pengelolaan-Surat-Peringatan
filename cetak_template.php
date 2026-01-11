@@ -2,7 +2,6 @@
 session_start();
 require 'koneksi.php';
 
-// Cek login
 if (!isset($_SESSION['username']) || $_SESSION['role'] != 'staff') {
     header("Location: login.php");
     exit;
@@ -12,7 +11,6 @@ $jenis = $_GET['jenis'] ?? '1';
 $download = isset($_GET['download']) ? true : false;
 $print = isset($_GET['print']) ? true : false;
 
-// Jika download, set header untuk PDF
 if ($download) {
     header('Content-Type: application/pdf');
     header('Content-Disposition: attachment; filename="Template_SP'.$jenis.'_Kosong.pdf"');
@@ -27,7 +25,6 @@ if ($download) {
     <style>
         @page {
             margin: 1.5cm;
-            /* Hilangkan header dan footer browser default */
             size: A4;
             margin: 2cm;
         }
@@ -57,23 +54,22 @@ if ($download) {
             padding-bottom: 5px;
             margin-bottom: 5px;
             position: relative;
-            min-height: 120px; /* Tinggi minimum untuk logo dan teks */
+            min-height: 120px;
         }
         
-        /* TEMPAT & TANGGAL di pojok kanan atas - DI LUAR KOP SURAT */
+        
         .tempat-tanggal {
             position: absolute;
-            top: 130px; /* Posisi di bawah garis header */
+            top: 130px; 
             right: 0;
             text-align: right;
             font-size: 11pt;
             line-height: 1.0;
         }
         
-        /* Style untuk logo - DITURUNKAN sedikit */
         .logo-container {
             position: absolute;
-            top: 30px; /* DITURUNKAN dari 0 ke 10px */
+            top: 30px;
             left: 0;
             width: 100px;
             height: auto;
@@ -85,7 +81,7 @@ if ($download) {
         }
         
         .header-content {
-            margin-left: 100px; /* Ruang untuk logo */
+            margin-left: 100px;
             text-align: center;
             width: calc(100% - 100px);
         }
@@ -102,27 +98,26 @@ if ($download) {
         .kop-politeknik {
             font-size: 16pt;
             font-weight: bold;
-            margin: 2px 0 0 0; /* DIPERKECIL */
+            margin: 2px 0 0 0; 
             letter-spacing: 0.5px;
             line-height: 1.0;
         }
         
-        /* ALAMAT dan KONTAK DI RAPATKAN KE TENGAH */
         .alamat-kontak {
             font-size: 9pt;
-            margin: 2px 0 0 0; /* DIPERKECIL */
+            margin: 2px 0 0 0;
             line-height: 1.1;
             text-align: center;
         }
         
         .kontak-line {
-            margin: 1px 0; /* SANGAT RAPAT */
+            margin: 1px 0;
             line-height: 1.0;
         }
         
         .nomor-surat {
             text-align: center;
-            margin: 20px 0 5px 0; /* DIPERKECIL */
+            margin: 20px 0 5px 0;
             font-size: 11pt;
             line-height: 1.0;
         }
@@ -184,7 +179,6 @@ if ($download) {
             text-align: right;
         }
         
-        /* FIELD INPUT - TANPA GARIS */
         .form-field {
             border: none;
             background: transparent;
@@ -210,7 +204,6 @@ if ($download) {
             min-width: 200px;
         }
         
-        /* TEXTAREA - TANPA GARIS */
         .form-textarea {
             width: 100%;
             min-height: 40px;
@@ -232,7 +225,6 @@ if ($download) {
             margin-top: 1px;
         }
         
-        /* Untuk print - HILANGKAN SEMUA HEADER/FOOTER BROWSER */
         @media print {
             @page {
                 margin: 1.5cm;
@@ -248,7 +240,6 @@ if ($download) {
                 print-color-adjust: exact;
             }
             
-            /* Hilangkan semua header/footer browser */
             @page {
                 margin: 1.5cm;
                 marks: none;
@@ -279,7 +270,6 @@ if ($download) {
                 padding: 0;
             }
             
-            /* Hilangkan "Template SP1 (1 Lembar)" saat print */
             .form-instruction,
             .action-buttons,
             .no-print {
@@ -287,7 +277,6 @@ if ($download) {
             }
         }
         
-        /* Tombol untuk web view */
         .action-buttons {
             margin: 15px 0;
             text-align: center;
@@ -341,7 +330,6 @@ if ($download) {
             font-size: 12px;
         }
         
-        /* Compact layout */
         .compact-list {
             margin: 5px 0 5px 20px;
             padding: 0;
@@ -353,12 +341,10 @@ if ($download) {
             line-height: 1.1;
         }
         
-        /* Spasi untuk kontak yang lebih rapat */
         .kontak-line span {
             margin: 0 3px;
         }
         
-        /* Highlight saat input aktif */
         .form-field:focus,
         .form-textarea:focus {
             background-color: #f0f8ff;
@@ -371,12 +357,9 @@ if ($download) {
         
         <?php endif; ?>
         
-        <!-- KOP SURAT -->
         <div class="kop-surat">
             <div class="logo-container">
-                <!-- Logo Politeknik Negeri Batam -->
                 <img src="poltek.png" alt="Logo Politeknik Negeri Batam" class="logo">
-                <!-- Jika file logo tidak ada, buat placeholder -->
                 <?php if (!file_exists('poltek.png')): ?>
                 <div style="width: 80px; height: 80px; border: 1px solid #ccc; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #666;">
                     LOGO<br>POLIBATAM
@@ -388,7 +371,6 @@ if ($download) {
                 <div class="kop-atas">KEMENTERIAN PENDIDIKAN DAN KEBUDAYAAN<br>RISET, DAN TEKNOLOGI</div>
                 <div class="kop-politeknik">POLITEKNIK NEGERI BATAM</div>
                 
-                <!-- ALAMAT dan KONTAK DI RAPATKAN -->
                 <div class="alamat-kontak">
                     <div class="kontak-line">
                         <input type="text" class="form-field form-field-large" id="alamat" placeholder="Jl. Ahmad Yani, Batam Center, Kecamatan Batam Kota, Batam 29461" value="Jl. Ahmad Yani, Batam Center, Kecamatan Batam Kota, Batam 29461" style="font-size: 9pt; min-width: 350px; text-align: center; padding: 0; margin: 0;">
@@ -409,14 +391,12 @@ if ($download) {
             </div>
         </div>
         
-        <!-- TEMPAT & TANGGAL di pojok kanan atas - DI LUAR KOP SURAT -->
         <div class="tempat-tanggal">
             <input type="text" class="form-field form-field-small" id="tempat" placeholder="Batam" value="Batam" style="text-align: right; font-size: 11pt; padding: 0; margin: 0;">
             , 
             <input type="text" class="form-field form-field-medium" id="tanggal_surat" placeholder="<?= date('d F Y') ?>" value="<?= date('d F Y') ?>" style="text-align: right; font-size: 11pt; padding: 0; margin: 0;">
         </div>
         
-        <!-- NOMOR SURAT -->
         <div class="nomor-surat">
             <p style="margin: 2px 0;"><strong>Nomor</strong> : 
                 <input type="text" class="form-field form-field-medium" id="nomor_surat" placeholder="XXX/SP<?= $jenis ?>/AK/<?= date('Y') ?>" value="" style="padding: 0; margin: 0;">
@@ -543,7 +523,6 @@ if ($download) {
             dasar: 'Pasal 5 ayat 2 Peraturan Akademik'
         };
 
-        // Fungsi untuk mengisi semua field dengan contoh
         function fillAllFields() {
             for (const [key, value] of Object.entries(contohData)) {
                 const element = document.getElementById(key);
@@ -554,21 +533,17 @@ if ($download) {
             updateDisplay();
         }
 
-        // Fungsi untuk mengosongkan semua field
         function clearAllFields() {
             const inputs = document.querySelectorAll('input, textarea');
             inputs.forEach(input => {
-                // Jangan kosongkan data header yang fixed
                 if (!['alamat', 'telepon', 'faksimile', 'website', 'email', 'tempat'].includes(input.id)) {
                     input.value = '';
                 }
             });
-            // Kosongkan tanggal surat tapi set ke default
             document.getElementById('tanggal_surat').value = '<?= date("d F Y") ?>';
             updateDisplay();
         }
 
-        // Update display fields
         function updateDisplay() {
             const nama = document.getElementById('ttd_nama').value;
             const jabatan = document.getElementById('ttd_jabatan').value;
@@ -579,14 +554,11 @@ if ($download) {
             document.getElementById('display_nip').textContent = nip;
         }
 
-        // Fungsi untuk mempersiapkan print (hilangkan elemen yang tidak perlu)
         function preparePrint() {
             
-            // Print
             window.print();
         }
 
-        // Auto update display ketika field diubah
         document.addEventListener('DOMContentLoaded', function() {
             const fieldsToWatch = ['ttd_nama', 'ttd_jabatan', 'nip'];
             fieldsToWatch.forEach(fieldId => {
@@ -596,7 +568,6 @@ if ($download) {
                 }
             });
             
-            // Auto print jika parameter print=1
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.has('print')) {
                 setTimeout(() => {
@@ -604,7 +575,6 @@ if ($download) {
                 }, 500);
             }
             
-            // Set data default untuk header
             document.getElementById('alamat').value = 'Jl. Ahmad Yani, Batam Center, Kecamatan Batam Kota, Batam 29461';
             document.getElementById('telepon').value = '+62 778 469856 - 469860';
             document.getElementById('faksimile').value = '+62 778 463620';
@@ -613,29 +583,23 @@ if ($download) {
             document.getElementById('tempat').value = 'Batam';
             document.getElementById('tanggal_surat').value = '<?= date("d F Y") ?>';
             
-            // Initial update
             updateDisplay();
             
-            // Auto focus ke field pertama yang dapat diisi
             const firstField = document.getElementById('nomor_surat');
             if (firstField && !window.location.search.includes('print')) {
                 firstField.focus();
             }
         });
 
-        // Fitur shortcut untuk cepat isi
         document.addEventListener('keydown', function(e) {
-            // Ctrl + F = Fill all
             if (e.ctrlKey && e.key === 'f') {
                 e.preventDefault();
                 fillAllFields();
             }
-            // Ctrl + C = Clear all
             if (e.ctrlKey && e.key === 'c') {
                 e.preventDefault();
                 clearAllFields();
             }
-            // Ctrl + P = Print
             if (e.ctrlKey && e.key === 'p') {
                 e.preventDefault();
                 preparePrint();

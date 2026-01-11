@@ -1,9 +1,6 @@
 <?php
-// =============================
-// BAGIAN PERHITUNGAN SP
-// =============================
-$total_alpha = 3;      // jumlah alpha diverifikasi (warna hijau)
-$total_sesi  = 16;     // total rencana perkuliahan
+$total_alpha = 3;      
+$total_sesi  = 16;     
 
 $persentase = ($total_alpha / $total_sesi) * 100;
 
@@ -61,7 +58,6 @@ if ($persentase >= 40) {
             display: inline-block;
         }
 
-        /* Bagian KETERANGAN SP */
         .header-sp {
             background-color: #ffc400;
             padding: 12px;

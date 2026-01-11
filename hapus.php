@@ -11,7 +11,6 @@ $id = $_GET['id'] ?? '';
 
 if ($id) {
 
-    // Ambil data user dulu
     $q = mysqli_query($koneksi, "SELECT nik, role FROM user WHERE id='$id'");
     $user = mysqli_fetch_assoc($q);
 
@@ -19,10 +18,8 @@ if ($id) {
         mysqli_begin_transaction($koneksi);
 
         try {
-            // Hapus akun user
             mysqli_query($koneksi, "DELETE FROM user WHERE id='$id'");
 
-            // Jika mahasiswa, hapus juga data mahasiswa
             if ($user['role'] === 'mahasiswa' && !empty($user['nik'])) {
                 mysqli_query($koneksi, "DELETE FROM mahasiswa WHERE nik='{$user['nik']}'");
             }

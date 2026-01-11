@@ -2,7 +2,6 @@
 session_start();
 require 'koneksi.php';
 
-// Cek login dan role
 if (!isset($_SESSION['username']) || $_SESSION['role'] != 'staff') {
     header("Location: login.php");
     exit;
@@ -11,7 +10,6 @@ if (!isset($_SESSION['username']) || $_SESSION['role'] != 'staff') {
 $username = $_SESSION['username'];
 $role = $_SESSION['role'];
 
-// Inisialisasi variabel
 $action = $_GET['action'] ?? 'dashboard';
 $id_sp = $_GET['id'] ?? 0;
 $message = $_GET['message'] ?? '';
@@ -20,7 +18,6 @@ $pdf_action = $_GET['pdf_action'] ?? '';
 $nik_search = $_GET['nik_search'] ?? '';
 $tab = $_GET['tab'] ?? 'data';
 
-// FUNGSI UMURTUK KEHADIRAN
 function getRingkasanKehadiran($koneksi, $nik) {
     $nik = mysqli_real_escape_string($koneksi, $nik);
     $query = "SELECT COUNT(CASE WHEN status = 'hadir' THEN 1 END) as hadir,
@@ -64,7 +61,6 @@ function hapusKehadiran($koneksi, $id) {
     return mysqli_query($koneksi, "DELETE FROM kehadiran WHERE id = '$id'");
 }
 
-// FUNGSI UTAMA
 function getSPData($koneksi, $search = '') {
     $query = "SELECT sp.*, m.nama as nama_mahasiswa, m.jurusan, m.email 
               FROM surat_peringatan sp LEFT JOIN mahasiswa m ON sp.nik = m.nik WHERE 1=1";
@@ -154,7 +150,6 @@ function kirimNotifikasiKeMahasiswa($koneksi, $nik, $jenis_sp, $alasan) {
     return true;
 }
 
-// PROSES CRUD
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     if (isset($_POST['tambah_sp'])) {
         $nik = mysqli_real_escape_string($koneksi, $_POST['nik']);
@@ -163,7 +158,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $tanggal = mysqli_real_escape_string($koneksi, $_POST['tanggal']);
         $keterangan = mysqli_real_escape_string($koneksi, $_POST['keterangan'] ?? '');
         
-        // Cek mahasiswa
         if (mysqli_num_rows(mysqli_query($koneksi, "SELECT * FROM mahasiswa WHERE nik = '$nik'")) == 0) {
             $nama = mysqli_real_escape_string($koneksi, $_POST['nama_mahasiswa'] ?? 'Mahasiswa Baru');
             $jurusan = mysqli_real_escape_string($koneksi, $_POST['jurusan'] ?? 'Belum diisi');
@@ -197,7 +191,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $file_path = $upload_dir . $new_file_name;
             
             if (move_uploaded_file($_FILES['pdf_file']['tmp_name'], $file_path)) {
-                // Cek kolom file_pdf
                 if (mysqli_num_rows(mysqli_query($koneksi, "SHOW COLUMNS FROM surat_peringatan LIKE 'file_pdf'")) == 0) {
                     mysqli_query($koneksi, "ALTER TABLE surat_peringatan ADD COLUMN file_pdf VARCHAR(255) DEFAULT NULL AFTER keterangan");
                 }
@@ -268,14 +261,12 @@ if (isset($_GET['delete'])) {
     }
 }
 
-// AMBIL DATA
 $sp_data = getSPData($koneksi, $search);
 $mahasiswa_data = getMahasiswaData($koneksi);
 $sp_detail = $id_sp > 0 ? getSPDetail($koneksi, $id_sp) : null;
 $stats = getDashboardStats($koneksi);
 $sp_terbaru = getSPTerbaru($koneksi);
 
-// HITUNG STATISTIK
 $total_sp = count($sp_data);
 $sp_aktif = 0;
 $sp_selesai = 0;
@@ -285,7 +276,6 @@ foreach ($sp_data as $sp) {
     if ($sp['status'] == 'Selesai') $sp_selesai++;
 }
 
-// DATA MAHASISWA DASHBOARD
 $mahasiswa_detail = null;
 $ringkasan_kehadiran = null;
 $riwayat_kehadiran = null;
