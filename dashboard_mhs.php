@@ -1,68 +1,85 @@
 <?php
 session_start();
-if (!isset($_SESSION['role']) || $_SESSION['role'] != 'mahasiswa') {
+require_once 'koneksi.php';
+
+/* =========================
+   AUTH GUARD (SESUAI GAMBAR)
+   ========================= */
+if (
+    empty($_SESSION['nik']) ||
+    empty($_SESSION['role']) ||
+    $_SESSION['role'] !== 'mahasiswa'
+) {
     header("Location: login.php");
     exit;
 }
 
-include 'koneksi.php';
-
 $nik = $_SESSION['nik'];
 
-$q = mysqli_query($koneksi, "
+/* =========================
+   DATA MAHASISWA
+   ========================= */
+$stmt = $koneksi->prepare("
     SELECT nama, jurusan 
     FROM mahasiswa 
-    WHERE nik='$nik'
+    WHERE nik = ?
 ");
-$mhs = mysqli_fetch_assoc($q);
+$stmt->bind_param("s", $nik);
+$stmt->execute();
+$res = $stmt->get_result();
 
-if (isset($_GET['download_pdf'])) {
-    $id_sp = $_GET['download_pdf'];
-    
-    $query = mysqli_query($koneksi, "
-        SELECT file_pdf, jenis_sp, tanggal 
-        FROM surat_peringatan 
-        WHERE id = '$id_sp' AND nik = '$nik'
-    ");
-    
-    if (mysqli_num_rows($query) > 0) {
-        $data = mysqli_fetch_assoc($query);
-        $file_path = $data['file_pdf'];
-        
-        if (!empty($file_path) && file_exists($file_path)) {
-            header('Content-Description: File Transfer');
-            header('Content-Type: application/pdf');
-            header('Content-Disposition: attachment; filename="SP' . $data['jenis_sp'] . '_' . date('Ymd', strtotime($data['tanggal'])) . '.pdf"');
-            header('Content-Transfer-Encoding: binary');
-            header('Expires: 0');
-            header('Cache-Control: must-revalidate');
-            header('Pragma: public');
-            header('Content-Length: ' . filesize($file_path));
-            
-            ob_clean();
-            flush();
-            
-            readfile($file_path);
-            exit;
-        } else {
-            die("
-            <div style='padding:20px;text-align:center;'>
-                <h3>File PDF tidak ditemukan!</h3>
-                <p>File SP yang diminta tidak tersedia di server.</p>
-                <p>Silakan hubungi staff akademik untuk informasi lebih lanjut.</p>
-                <a href='dashboard_mhs.php' class='btn btn-primary'>Kembali ke Dashboard</a>
-            </div>");
-        }
-    } else {
-        die("
-        <div style='padding:20px;text-align:center;'>
-            <h3>Data tidak ditemukan!</h3>
-            <p>SP yang diminta tidak ditemukan atau tidak sesuai dengan akun Anda.</p>
-            <a href='dashboard_mhs.php' class='btn btn-primary'>Kembali ke Dashboard</a>
-        </div>");
-    }
+if ($res->num_rows === 0) {
+    session_destroy();
+    die("Data mahasiswa tidak ditemukan");
 }
 
+$mhs = $res->fetch_assoc();
+
+/* =========================
+   DOWNLOAD PDF
+   ========================= */
+if (isset($_GET['download_pdf'])) {
+
+    $id = (int) $_GET['download_pdf'];
+
+    $stmt = $koneksi->prepare("
+        SELECT file_pdf, jenis_sp, tanggal 
+        FROM surat_peringatan 
+        WHERE id = ? AND nik = ?
+    ");
+    $stmt->bind_param("is", $id, $nik);
+    $stmt->execute();
+    $resPdf = $stmt->get_result();
+
+    if ($resPdf->num_rows === 0) {
+        die("SP tidak ditemukan");
+    }
+
+    $sp = $resPdf->fetch_assoc();
+    $file = $sp['file_pdf'];
+
+    if (!$file || !file_exists($file)) {
+        die("File PDF tidak tersedia");
+    }
+
+    header("Content-Type: application/pdf");
+    header("Content-Disposition: attachment; filename=SP{$sp['jenis_sp']}_" . date('Ymd', strtotime($sp['tanggal'])) . ".pdf");
+    header("Content-Length: " . filesize($file));
+    readfile($file);
+    exit;
+}
+
+/* =========================
+   DATA SP
+   ========================= */
+$stmt = $koneksi->prepare("
+    SELECT * FROM surat_peringatan
+    WHERE nik = ?
+    ORDER BY tanggal DESC
+");
+$stmt->bind_param("s", $nik);
+$stmt->execute();
+$surat_peringatan = $stmt->get_result();
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -278,7 +295,6 @@ body { background-color: #f8f9fa; }
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 const sidebar = document.getElementById('sidebar');
 const content = document.querySelector('.content');
@@ -290,30 +306,16 @@ sidebar.addEventListener('hidden.bs.offcanvas', () => {
     content.style.marginLeft = "0";
 });
 
-document.addEventListener('DOMContentLoaded', function() {
-    
+// FIX ERROR: definisikan downloadLinks
+document.addEventListener('DOMContentLoaded', function () {
+    const downloadLinks = document.querySelectorAll('a[href*="download_pdf="]');
+    const loadingDiv = document.getElementById('pdfLoading');
+
     downloadLinks.forEach(link => {
-        link.addEventListener('click', function(e) {
-            const loadingDiv = document.getElementById('pdfLoading');
-            if (loadingDiv) {
-                loadingDiv.style.display = 'block';
-            }
-            
-            setTimeout(function() {
-                if (loadingDiv) {
-                    loadingDiv.style.display = 'none';
-                }
-            }, 3000);
+        link.addEventListener('click', () => {
+            if (loadingDiv) loadingDiv.style.display = 'block';
         });
     });
 });
-
-if (window.location.search.includes('download_pdf=')) {
-    const loadingDiv = document.getElementById('pdfLoading');
-    if (loadingDiv) {
-        loadingDiv.style.display = 'block';
-    }
-}
 </script>
-</body>
-</html>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
